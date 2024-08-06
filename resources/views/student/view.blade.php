@@ -38,6 +38,9 @@
                                                     @endforeach
                                                 @endif
                                             </select>
+                                            @error('classroom')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -45,6 +48,9 @@
                                             <label for="enrollment_date">Enrolling Date</label>
                                             <input type="date" class="form-control" name="enrollment_date"
                                                 id="enrollment_date" placeholder="dd/mm/yyyy" value="">
+                                            @error('enrollment_date')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -72,6 +78,9 @@
                                             <label for="first_name">First Name</label>
                                             <input type="text" class="form-control" name="first_name" id="first_name"
                                                 autofocus placeholder="First Name" value="">
+                                            @error('first_name')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -79,6 +88,9 @@
                                             <label for="surname">Last Name</label>
                                             <input type="text" class="form-control" name="surname" id="surname"
                                                 placeholder="Last Name" value="">
+                                            @error('surname')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -91,6 +103,9 @@
                                                 <option value="0">Male</option>
                                                 <option value="1">Female</option>
                                             </select>
+                                            @error('gender')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -98,6 +113,9 @@
                                             <label for="birth_date">Date of Birth</label>
                                             <input type="date" class="form-control" name="birth_date" id="birth_date"
                                                 placeholder="dd/mm/yyyy" value="">
+                                            @error('birth_date')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -107,8 +125,11 @@
                                         <div class="form-group">
                                             <label for="parent_phone_number">Parent Phone Number</label>
                                             <input type="text" class="form-control" name="parent_phone_number"
-                                                id="parent_phone_number" placeholder="Enter Phone Number like *** *** ** **"
-                                                value="">
+                                                id="parent_phone_number"
+                                                placeholder="Enter Phone Number like *** *** ** **" value="">
+                                            @error('parent_phone_number')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -116,6 +137,9 @@
                                             <label for="father_name">Father Name</label>
                                             <input type="text" class="form-control" name="father_name"
                                                 id="father_name" placeholder="Father Name" value="">
+                                            @error('father_name')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -126,6 +150,9 @@
                                             <label for="address">Address</label>
                                             <textarea class="form-control" name="address" id="address" rows="3" placeholder="Address"></textarea>
                                         </div>
+                                        @error('address')
+                                            <div class="alert alert-danger">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
 

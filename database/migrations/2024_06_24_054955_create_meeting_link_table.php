@@ -20,9 +20,10 @@ return new class extends Migration
             $table->string('class')->nullable();
             $table->string('topic_id')->nullable();
             $table->string('subtopic_id')->nullable();
-            $table->dateTime('class_time', 6)->nullable();
+            $table->dateTime('from_meeting_time',6)->nullable();
             $table->string('class_room')->nullable();
             $table->text('note')->nullable();
+            $table->dateTime('to_meeting_time', 6)->nullable();
 
             $table->foreign('teacher_id')->references('id')->on('teachers')->onDelete('cascade');
             $table->foreign('school_id')->references('id')->on('schools')->onDelete('cascade');

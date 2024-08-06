@@ -152,9 +152,6 @@ class studentFlow extends Controller
 
     public function loginll(Request $request)
     {
- 
-       
-
         $rules = array (
             'email' => 'required|max:255',
             'password' => 'required|max:255',
@@ -187,7 +184,6 @@ class studentFlow extends Controller
             
             $student = DB::table('students')->where('email', $request->email)->first();
             
-            // if ($student && Hash::check($request->password, $student->password)) {
                 if ($student && $request->password === $student->password) {
                 return redirect('studentFlow/index');
             } else {
@@ -249,21 +245,22 @@ class studentFlow extends Controller
         $studentId = $data->id;
 
         $homeWorksShares = DB::table('homeworkshares')
-        ->leftJoin('topics', 'homeworkshares.topic_id', '=', 'topics.id')
-        ->leftJoin('subtopics', 'homeworkshares.sub_topic_id', '=', 'subtopics.id')
         ->leftJoin('classrooms', 'homeworkshares.classroom_id', '=', 'classrooms.id')
-        ->leftJoin('subjects', 'homeworkshares.subject_id', '=', 'subjects.id')
+        ->leftJoin('subjects', 'homeworkshares.subject_id', '=', 'subjects.subject_code')
+        ->leftJoin('videos', function ($join) {
+            $join->on('homeworkshares.topic_id', '=', 'videos.id')
+                 ->where('homeworkshares.topic_id', '!=', 0);
+        })
         ->select(
-            'homeworkshares.*', 
-            'topics.course_title as topic_name', 
-            'subtopics.sub_topic_name as subtopic_name',
+            'homeworkshares.*',
             'classrooms.name as classroom_name',
             'subjects.name as subject_name',
+            'videos.courses_type',
+            'videos.video',
         )
         ->whereRaw("FIND_IN_SET(?, homeworkshares.students_ids)", [$studentId])
         // ->orderBy('meeting_time', 'desc')
         ->get();
-        // dd($homeWorksShares);
         
         return view('studentFlow.homeworks', compact('homeWorksShares'));
     }

@@ -146,12 +146,8 @@ Route::prefix('teacher')->group(function () {
      Route::match(['get','post'],'class_link',[TeacherController::class, 'class_link']);
 
      Route::match(['get','post'],'share/{id}',[TeacherController::class, 'share']);
+    Route::post('/teacher-change-password', [TeacherController::class, 'changePassword'])->name('teacher.change.password');
 
-     
-     
-
-     
-     
      // route add new requested couse in requests table
      Route::post('/store', [TeacherController::class, 'store_requested_data'])->name('store');
      // route for requested data
@@ -212,6 +208,10 @@ Route::prefix('courses')->group(function () {
     Route::post('store', [CoursesController::class, 'store'])->name("storecourses");
     //route for manage page
     Route::get('manage', [CoursesController::class, 'managedata']);
+    Route::post('share-content/{course_id}', [CoursesController::class,'shareAdminContent']);
+    Route::get('path-to-fetch-students', [CoursesController::class, 'getStudentsByClassroomAndQuery']);
+
+
     // route for request course frame
     Route::get('course_frame', [CoursesController::class, 'getframe']);
     Route::get('getframe_test', [CoursesController::class, 'getframe_test']);
@@ -231,16 +231,10 @@ Route::prefix('courses')->group(function () {
        Route::get('videomanager', [CoursesController::class, 'videomanager']);
 
        Route::match(['get','post'],'add_video_update/{id}',[TeacherController::class, 'add_video_update']);
-       Route::match(['get','post'],'video_delete/{id}',[TeacherController::class, 'video_delete']);
+       Route::match(['get','post'],'content_delete/{id}',[TeacherController::class, 'content_delete']);
 
-
-
-    // route for add data from csv file
-    // Route::post('add-csv-data',[CoursesController::class,'addCSVData']);
-    // Route::get('add-csv-data',[CoursesController::class,'addcsvview']);
-    // route for edit course data
     Route::get('edit_course/{id}', [CoursesController::class, 'edit']);
-    Route::post('/courses/update/{id}', [CoursesController::class, 'updatecourses'])->name('updatecourses');
+    Route::put('/update_courses/{id}', [CoursesController::class, 'updatecourses'])->name('update_courses');
 
 
     Route::post('update/{id}', [CoursesController::class, 'update']);

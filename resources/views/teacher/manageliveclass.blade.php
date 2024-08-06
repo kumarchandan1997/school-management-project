@@ -51,7 +51,12 @@
                                                 <td>{{ $meeting->classroom_name }}</td>
                                                 <td>{{ $meeting->subject_name }}</td>
                                                 {{-- <td>{{ $meeting->subtopic_name }}</td> --}}
-                                                <td>{{ $meeting->class }}</td>
+                                                <td>
+                                                    <a href="{{ $meeting->class }}" target="_blank"
+                                                        class="btn btn-success btn-rounded">Open</a>
+                                                </td>
+
+
                                                 <td>{{ Carbon::parse($meeting->class_time)->format('Y-m-d h:i A') }}</td>
                                                 <td>
                                                     <button type="button" class="btn btn-info ti-share btn-rounded"

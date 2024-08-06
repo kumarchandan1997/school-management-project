@@ -19,7 +19,7 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="first_name">First Name1</label>
+                                            <label for="first_name">First Name</label>
                                             <input type="text" class="form-control" name="first_name" id="first_name"
                                                 autofocus placeholder="First Name" value="{{ $teacher->first_name }}"
                                                 required>
@@ -103,18 +103,25 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <div class="row">
-                                    <div class="col-md-12">
+                                    <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="password">Password</label>
-                                            <input type="password" class="form-control" name="password" id="password"
-                                                placeholder="Password" required>
+                                            <input type="text" class="form-control" name="password" id="password"
+                                                placeholder="Password" required value="{{ $passwordRecord->password }}">
                                             @if ($errors->has('password'))
                                                 <div class="alert alert-danger">
                                                     {{ $errors->first('password') }}
                                                 </div>
                                             @endif
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="show_password">Show Password</label>
+                                            <input type="text" class="form-control" name="show_password"
+                                                id="show_password" placeholder="Password" readonly
+                                                value="{{ $passwordRecord->show_password }}">
                                         </div>
                                     </div>
                                 </div>

@@ -1,7 +1,6 @@
 @extends('layouts.app_view');
 
 @section('content')
-
     <div class="main-panel">
         <div class="content-wrapper">
             <div class="row">
@@ -10,13 +9,10 @@
                         <div class="card-body">
                             <h4 class="card-title">{{ isset($courses) ? 'Edit' : 'Add New' }} Content
                                 {{ isset($courses) ? 'with The Number: ' . $courses->subject_code : '' }}</h4>
-                            <form class="forms-sample"
-                                action="{{ isset($courses) ? route('updatecourses', $courses->id) : route('storecourses') }}"
-                                method="post">
+                            <form class="forms-sample" action="{{ route('update_courses', $courses->id) }}" method="POST"
+                                enctype="multipart/form-data">
                                 @csrf
-                                @if (isset($courses))
-                                    @method('POST')
-                                @endif
+                                @method('PUT')
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
@@ -51,66 +47,63 @@
                                             <select id="subject_edit_content_admin" name="subject_code"
                                                 class="form-control form-control-sm" required>
                                                 <option value="">Select subject</option>
-                                                <!-- Subjects will be populated here via AJAX -->
                                             </select>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="topic_id">Topic</label>
-                                            <select id="edit_topic_id_admin_content" name="topic_id"
-                                                class="form-control form-control-sm" required>
-                                            </select>
-                                            @error('topic_id')
-                                                <span class="text-danger">{{ $message }}</span>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="teacher">Sub Topic</label>
-                                            <select id="admin_content_subtopic_id" name="subtopic_id"
-                                                class="form-control form-control-sm" required>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
                                             <label for="coursetype">Content Type</label>
-                                            <select id="coursetype" name="coursetype" class="form-control form-control-sm"
-                                                required>
-                                                @if (isset($course->courses_type))
-                                                    @if ($course->courses_type == 'PDF')
-                                                        <option value="PDF" selected>PDF</option>
-                                                        <option value="Video">Video</option>
-                                                    @else
-                                                        <option value="Video" selected>Video</option>
-                                                        <option value="PDF">PDF</option>
-                                                    @endif
-                                                @else
-                                                    <option value="">Select Content Type</option>
-                                                    <option value="PDF" id="option1">PDF</option>
-                                                    <option value="Video" id="option1">Video</option>
-                                                @endif
+                                            <select id="Editcoursetype" name="coursetype"
+                                                class="form-control form-control-sm" required
+                                                onchange="toggleSectionsEdit()">
+                                                <option value="">Select Content Type</option>
+                                                <option value="PDF"
+                                                    {{ isset($courses) && $courses->courses_type == 'PDF' ? 'selected' : '' }}>
+                                                    PDF</option>
+                                                <option value="Video"
+                                                    {{ isset($courses) && $courses->courses_type == 'Video' ? 'selected' : '' }}>
+                                                    Video</option>
+                                                <option value="Url"
+                                                    {{ isset($courses) && $courses->courses_type == 'Url' ? 'selected' : '' }}>
+                                                    Url</option>
                                             </select>
                                         </div>
                                     </div>
+
                                 </div>
-                                {{ csrf_field() }}
-                                <div class="row">
+
+                                <div id="fileUploadSection" class="row d-none">
                                     <div class="col-md-12">
                                         <div class="form-group">
-                                            <label for="url">URL</label>
-                                            @if (isset($course))
+                                            <label for="pdf_video">Upload File</label>
+                                            <input type="file" class="form-control" name="pdf_video" id="pdf_video">
+                                            @error('pdf_video')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
+
+                                            <!-- Section to show existing file -->
+                                            <div id="existingFileSection"
+                                                class="{{ isset($courses) && ($courses->courses_type == 'PDF' || $courses->courses_type == 'Video') && $courses->pdf_video ? '' : 'd-none' }}">
+                                                <p>Current File: <a href="{{ $courses->pdf_video }}"
+                                                        target="_blank">{{ $courses->pdf_video }}</a></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{ csrf_field() }}
+                                <div class="row">
+                                    <div id="urlSectionEdit" class="row d-none">
+                                        <div class="col-md-12">
+                                            <div class="form-group">
+                                                <label for="url">URL</label>
                                                 <input type="text" class="form-control" name="url"
-                                                    value="{{ $courses->url }}" id="url" required>
-                                            @else
-                                                <input type="text" class="form-control" name="url"
-                                                    value="{{ $courses->url }}" id="url" required>
-                                            @endif
+                                                    value="{{ $courses->url ?? old('url') }}" id="url">
+                                                @error('url')
+                                                    <div class="alert alert-danger">{{ $message }}</div>
+                                                @enderror
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -125,7 +118,7 @@
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary me-2">Save</button>
-                                <a class="btn btn-light" href="/subject">Cancel</a>
+                                <a class="btn btn-light" href="">Cancel</a>
                             </form>
                         </div>
                     </div>
@@ -282,4 +275,26 @@
         });
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleSectionsEdit(); // Call initially to set the correct state
+        });
+
+        function toggleSectionsEdit() {
+            const coursetype = document.getElementById('Editcoursetype').value;
+            const fileUploadSection = document.getElementById('fileUploadSection');
+            const urlSection = document.getElementById('urlSectionEdit');
+
+            if (coursetype === 'PDF' || coursetype === 'Video') {
+                fileUploadSection.classList.remove('d-none');
+                urlSection.classList.add('d-none');
+            } else if (coursetype === 'Url') {
+                fileUploadSection.classList.add('d-none');
+                urlSection.classList.remove('d-none');
+            } else {
+                fileUploadSection.classList.add('d-none');
+                urlSection.classList.add('d-none');
+            }
+        }
+    </script>
 @endsection

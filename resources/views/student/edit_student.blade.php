@@ -30,6 +30,9 @@
                                                     </option>
                                                 @endforeach
                                             </select>
+                                            @error('classroom')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -37,6 +40,9 @@
                                             <label for="enrollment_date">Enrolling Date</label>
                                             <input type="date" class="form-control" name="enrollment_date"
                                                 id="enrollment_date" value="{{ $student->enrollment_date }}">
+                                            @error('enrollment_date')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -65,6 +71,9 @@
                                             <label for="first_name">First Name</label>
                                             <input type="text" class="form-control" name="first_name" id="first_name"
                                                 placeholder="First Name" value="{{ $student->first_name }}">
+                                            @error('first_name')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -72,6 +81,9 @@
                                             <label for="surname">Last Name</label>
                                             <input type="text" class="form-control" name="surname" id="surname"
                                                 placeholder="Last Name" value="{{ $student->surname }}">
+                                            @error('surname')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -86,6 +98,9 @@
                                                 <option value="1" {{ $student->gender == 1 ? 'selected' : '' }}>Female
                                                 </option>
                                             </select>
+                                            @error('gender')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -93,6 +108,9 @@
                                             <label for="birth_date">Date of Birth</label>
                                             <input type="date" class="form-control" name="birth_date" id="birth_date"
                                                 value="{{ $student->birth_date }}">
+                                            @error('birth_date')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -104,13 +122,20 @@
                                             <input type="text" class="form-control" name="parent_phone_number"
                                                 id="parent_phone_number" placeholder="Enter Phone Number"
                                                 value="{{ $student->parent_phone_number }}">
+                                            @error('parent_phone_number')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="father_name">Father Name</label>
-                                            <input type="text" class="form-control" name="father_name" id="father_name"
-                                                placeholder="Father Name" value="{{ $student->father_name }}">
+                                            <input type="text" class="form-control" name="father_name"
+                                                id="father_name" placeholder="Father Name"
+                                                value="{{ $student->father_name }}">
+                                            @error('father_name')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -120,6 +145,9 @@
                                         <div class="form-group">
                                             <label for="address">Address</label>
                                             <textarea class="form-control" name="address" id="address" rows="3" placeholder="Address">{{ $student->address }}</textarea>
+                                            @error('address')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>

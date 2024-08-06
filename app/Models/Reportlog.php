@@ -9,6 +9,6 @@ class Reportlog extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['video_id', 'open_time', 'close_time', 'interval','description'];
+    protected $fillable = ['content_name','teacher_id','classroom_id','subject_code','content','content_type','content_table_name','video_id', 'open_time', 'close_time', 'interval','description'];
 
 }

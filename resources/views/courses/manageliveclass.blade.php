@@ -1,6 +1,9 @@
 @extends('layouts.app_view');
 
 @section('content')
+    @php
+        use Carbon\Carbon;
+    @endphp
     <div class="main-panel">
         <div class="content-wrapper">
             <!-- Search Form -->
@@ -35,6 +38,7 @@
                                             {{-- <th>Subject</th> --}}
                                             <th>Subject</th>
                                             <th>Topic</th>
+                                            <th>Meeting Time</th>
                                             <th>Meeting Link</th>
                                             <th>Action</th>
                                         </tr>
@@ -46,16 +50,17 @@
                                                 <td>{{ $meeting->classroom_name }}</td>
                                                 <td>{{ $meeting->subject_name }}</td>
                                                 <td>{{ $meeting->topic_name }}</td>
-                                                <td>{{ $meeting->class }}</td>
+                                                <td>{{ Carbon::parse($meeting->class_time)->format('Y-m-d h:i A') }}</td>
+                                                <td>
+                                                    <form action="{{ $meeting->class }}" method="get"
+                                                        style="display:inline;">
+                                                        <button type="submit"
+                                                            class="btn btn-success btn-rounded">Open</button>
+                                                    </form>
+                                                </td>
+
                                                 <td>
                                                     <div class="btn-group">
-                                                        {{-- <form action="/teacher/edit_homework/{{ $meeting->id }}"
-                                                            method="get">
-                                                            @csrf
-                                                            <button type="submit"
-                                                                class="btn btn-dark ti-pencil-alt btn-rounded">
-                                                                Edit</button>
-                                                        </form> --}}
                                                         <form action="/teacher/homework-delete/{{ $meeting->id }}"
                                                             method="post">
                                                             @method('DELETE')

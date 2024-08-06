@@ -29,7 +29,7 @@
 
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="subject_name" class="col-form-label">Subject111</label>
+                                            <label for="subject_name" class="col-form-label">Subject</label>
                                             <input type="text" name="subject_name" value="subject_name" hidden>
                                             <select id="selectedVideoSubject" name="subject_name"
                                                 class="form-control form-control-sm" required>

@@ -157,32 +157,30 @@ class ClassroomController extends Controller
     {
         $search = $request->query('search');
         $school_id=session('school_id');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
     
         $query = DB::table('reportlogs')
-            ->leftJoin('videos', 'reportlogs.video_id', '=', 'videos.id')
-            ->leftJoin('subjects', 'videos.subject_code', '=', 'subjects.subject_code')
-            ->leftJoin('teachers', 'videos.teacher_id', '=', 'teachers.id')
-            ->leftJoin('classrooms','videos.classroom_id','=','classrooms.id')
+            ->leftJoin('subjects', 'reportlogs.subject_code', '=', 'subjects.subject_code')
+            ->leftJoin('teachers', 'reportlogs.teacher_id', '=', 'teachers.id')
+            ->leftJoin('classrooms','reportlogs.classroom_id','=','classrooms.id')
             ->select(
-                'reportlogs.id',
-                'reportlogs.open_time',
-                'reportlogs.close_time',
-                'reportlogs.interval',
-                'videos.course_title',
-                'videos.subject_code',
-                'videos.video',
-                'videos.teacher_id',
-                'videos.classroom_id',
+                'reportlogs.*',
                 'subjects.name as subject_name',
                 'classrooms.name as classroom_name',
                 DB::raw('CONCAT(teachers.first_name, " ", teachers.surname) as fullname') 
-            )->where('videos.school_id', '=', $school_id)
+            )->where('reportlogs.description', '=', $school_id)
             ->when($search, function ($query, $search) {
-                $query->where('videos.course_title', 'like', "%{$search}%")
+                $query->where('reportlogs.content_name', 'like', "%{$search}%")
                       ->orWhere('subjects.name', 'like', "%{$search}%")
                       ->orWhere('classrooms.name', 'like', "%{$search}%")
                       ->orWhere('reportlogs.open_time', 'like', "%{$search}%")
                       ->orWhere(DB::raw('CONCAT(teachers.first_name, " ", teachers.surname)'), 'like', "%{$search}%");
+            })->when($startDate, function ($query, $startDate) {
+                return $query->whereDate('reportlogs.created_at', '>=', $startDate);
+            })
+            ->when($endDate, function ($query, $endDate) {
+                return $query->whereDate('reportlogs.created_at', '<=', $endDate);
             })->orderBy('reportlogs.open_time', 'desc');
     
         $reportLogs = $query->get();

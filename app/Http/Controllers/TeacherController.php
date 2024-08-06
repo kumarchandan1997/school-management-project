@@ -19,9 +19,10 @@ use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use mysql_xdevapi\Exception;
-use Illuminate\Validation\Validator;
+// use Illuminate\Validation\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Topic;
 use App\Models\Subtopic;
@@ -33,6 +34,7 @@ use App\Models\Uploadurlshare;
 use App\Models\Liveclassshare;
 use App\Models\Educationalgameshare;
 use App\Models\Homeworkshare;
+use App\Models\ApproveContent;
 use Illuminate\Support\Facades\Storage;
 
 
@@ -146,27 +148,19 @@ class TeacherController extends Controller
      */
     public function edit(int $id)
     {
-        // dd("chandan");
         $classrooms = Classroom::all();
         $teacher = Teacher::findOrFail($id);
-        // dd($teacher);
-        return view('teacher.edit_teacher', compact('teacher', 'classrooms' ));
+        $passwordRecord = DB::table('users')->where('id', $teacher->user_id)->select('password', 'show_password')->first();
+        return view('teacher.edit_teacher', compact('teacher', 'classrooms','passwordRecord'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Illuminate\Routing\Redirector
-     */
     public function update(Request $request, int $id)
-{
+   {
     $teacher = Teacher::findOrFail($id);
     $teacher_user_id = $teacher->user_id;
     $user = User::findOrFail($teacher_user_id);
 
-    $this->validate($request, [
+     $this->validate($request, [
         'first_name' => 'required|max:30',
         'surname' => 'required|max:30',
         'birth_date' => 'required',
@@ -174,16 +168,14 @@ class TeacherController extends Controller
         'phone_number' => 'required|regex:/[0-9]{10}/',
         'photo' => 'required|mimes:jpeg,bmp,png,jpg|max:2048',
         'address' => 'required',
-    ]);
+     ]);
 
     try {
         DB::transaction(function () use ($request, $teacher, $user) {
             if ($request->hasFile('photo')) {
                 try {
-                    // remove the image locally.
                     unlink(public_path('/images/' . $teacher->photo_path));
                 } catch (\Exception $exception) {
-                    // Todo: To handle this.
                 }
                 $path = Str::of('Teachers/')->append($request->get('surname'));
                 
@@ -201,7 +193,7 @@ class TeacherController extends Controller
             $teacher->save();
 
             $user->email = $request->email;
-            $user->name = $request->first_name . " " . $request->surname; // corrected concatenation
+            $user->name = $request->first_name . " " . $request->surname;
             $user->phone_number = $request->phone_number;
             $user->photo_path = $photo_path;
             if($request->has('password') && !empty($request->password)) {
@@ -210,7 +202,6 @@ class TeacherController extends Controller
             $user->save();
         });
     } catch (\Exception $exception) {
-        // Back to form with errors
         return redirect('/teacher/edit/' . $id)
             ->withErrors($exception->getMessage())->withInput();
     }
@@ -246,25 +237,7 @@ class TeacherController extends Controller
 
 
 
-    // this code onle delete data in teacher table
-    //   try {
-    //         Teacher::destroy($id);
-    //         User::destroy($ID);
-    //     } catch (Exception $exception){
-    //         echo $exception->getMessage();
-    //     }
-    //     return redirect('/teacher');
-    // Todo: ask for the differences between these ways and which one has better performance.
-//    public function fetchSubjects(Request $request){
-//        $id = $request->get('id');
-//        $subs = Subject::query()->where('classroom_id', $id)->get();
-//        $outputhtml = '<option value="">Select a Subject</option>';
-//        foreach($subs as $sub) {
-//            $outputhtml .= '<option value="'.$sub->id.'">'.$sub->name.'</option>';
-//        }
-//        echo $outputhtml;
-//    }
-
+    
 
 
 public function student_create(Request $request){
@@ -306,16 +279,62 @@ public function manage_student(){
             return sprintf("%06d", 1);
     }
 
+    public function changePassword(Request $request)
+    {
+    $validated = $request->validate([
+        'currentPassword' => 'required|string',
+        'newPassword' => 'required|string',
+    ]);
 
-    // new function for data store in data base\\
+    $teacherId = session('teacher_id');
+    $userId = DB::table('teachers')->where('id',$teacherId)->first('user_id');
+    $user = DB::table('users')->where('id',$userId->user_id)->first();
+
+ 
+
+    if (!Hash::check($validated['currentPassword'], $user->password)) {
+        return response()->json(['success' => false, 'message' => 'Current password is incorrect.']);
+    }
+
+        DB::table('users')
+        ->where('id', $userId->user_id)
+        ->update([
+            'password' => Hash::make($validated['newPassword']),
+            'show_password' => $validated['newPassword'],
+        ]);
+
+    return response()->json(['success' => true, 'message' => 'Password changed successfully.']);
+  }
+
+
+
     public function getteacherdata(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:255',
+            'surname' => 'required|string|max:255',
+            'gender' => 'required|in:0,1',
+            'birth_date' => 'required|date',
+            'phone_number' => 'required|string|max:11|regex:/^\d+$/',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|min:6',
+            'address' => 'required|string|max:500',
+            'photo' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+    
+            if ($validator->fails()) {
+                return redirect('/teacher/create')
+                            ->withErrors($validator)
+                            ->withInput();
+            }
+
+        
         try {
             DB::beginTransaction();
     
             $school_id = session('school_id');
             $teacher_role_id = 2;
-            $soft_login = 1; // 1 for active login
+            $soft_login = 1;
             $photo_path = null;
     
             if ($request->hasFile('photo')) {
@@ -329,6 +348,7 @@ public function manage_student(){
             $new_entry->email = $request->get('email');
             $new_entry->photo_path = $photo_path;
             $new_entry->password = bcrypt($request->get('password'));
+            $new_entry->show_password = $request->get('password');
             $new_entry->phone_number = $request->get('phone_number');
             $new_entry->role_id = $teacher_role_id;
             $new_entry->soft_login = $soft_login;
@@ -354,7 +374,7 @@ public function manage_student(){
     
             return redirect('/teacher/create')->with('success', 'A Teacher Updated Successfully.');
         } catch (\Exception $e) {
-            // dd($e->getMessage());
+            dd($e->getMessage());
             DB::rollBack();
             return redirect('/teacher/create')->with('error', 'An error occurred: ' . $e->getMessage());
         }
@@ -362,13 +382,13 @@ public function manage_student(){
 
     public function Teacherupdate(Request $request, $id)
     {
-        // dd($request->all());
         $request->validate([
             'first_name' => 'required|string|max:255',
             'surname' => 'required|string|max:255',
             'birth_date' => 'required|date|before:today',
-            'phone_number' => 'required|string|max:15',
+            'phone_number' => 'required|string|max:11|regex:/^\d+$/',
             'email' => 'required|email|max:255',
+            // 'email' => 'required|string|email|max:255|unique:users,email',
             // 'password' => 'nullable|string|min:6|confirmed',
             'address' => 'required|string|max:500',
             'gender' => 'required|integer|in:0,1',
@@ -394,12 +414,13 @@ public function manage_student(){
             $user->email = $request->get('email');
             $user->photo_path = $photo_path;
             if ($request->filled('password')) {
-                $user->password = bcrypt($request->get('password'));
+                // $user->password = bcrypt($request->get('password'));
+                $user->password = $request->get('password');
             }
             $user->phone_number = $request->get('phone_number');
             $user->save();
 
-            $teacher->teacher_num = $teacher->teacher_num; // No change
+            $teacher->teacher_num = $teacher->teacher_num;
             $teacher->first_name = $request->get('first_name');
             $teacher->surname = $request->get('surname');
             $teacher->birth_date = $request->get('birth_date');
@@ -674,7 +695,7 @@ public function getTeacherDashboard(){
 
             return redirect()->route('topic.index')->with('success', 'Topic saved successfully.');
         } catch (Exception $e) {
-            dd($e->getMessage());
+            // dd($e->getMessage());
             Log::error('Error saving topic: ' . $e->getMessage());
             return redirect()->back()->withErrors('An error occurred while saving the topic. Please try again.')->withInput();
         }
@@ -900,7 +921,6 @@ public function getTeacherDashboard(){
         ->pluck('classrooms.name','subjects.classroom_id');
 
         $content = DB::table('videos')->where('status','Approve')->get();
-        // dd($content);
 
         return view('teacher.homework.create', ['classrooms' => $classrooms,'content'=>$content]);
     }
@@ -1095,10 +1115,6 @@ public function getTeacherDashboard(){
                 ->where('school', $teacher_school_id)
                 ->whereIn('classroom_id', $classroom_ids)
                 ->get();
-
-        
-
-
         return view('teacher.manageliveclass',compact('meetingLinks','students'));
     }
 
@@ -1246,21 +1262,18 @@ public function getTeacherDashboard(){
         $homeworkDetails = DB::table('homework')->where('id',$meetingId)->first();
         $studentIds = implode(',', $request->input('student_ids'));
         $teacher_school_id=session('school_id');
-        // dd($homeworkDetails);
 
 
         Homeworkshare::create([
             'students_ids' => $studentIds,
             'teacher_id' => $homeworkDetails->teacher_id ?? 0,
-            'topic_id' => $homeworkDetails->topic_id ?? 0,
+            'topic_id' => $homeworkDetails->content_id ?? 0,
             'sub_topic_id' => $homeworkDetails->subtopic_id ?? 0,
             'description' => $request->description,
             'classroom_id' => $homeworkDetails->classroom_id ?? 0,
             'subject_id' => $homeworkDetails->subject_code ?? 0,
             'homework_title' => $homeworkDetails->homework_title ?? 0,
-            // 'status' => 'done',
             'homework_link' => $homeworkDetails->homework_file ?? 0,
-            // 'homework_time' => $homeworkDetails->class_time,
         ]);
 
         $studentArray = $request->input('student_ids');
@@ -1301,7 +1314,8 @@ public function getTeacherDashboard(){
             $video = video($request);
             $teacher_id = session('teacher_id');
             $school_id = session('school_id');
-            $Add_Requested_courses = Video::create([
+            
+            $Add_Requested_video = Video::create([
                 'classroom_id'=>$request->classroom_id,
                 'teacher_id' => $teacher_id,
                 'course_title' => $request->input('course_title'),
@@ -1314,6 +1328,17 @@ public function getTeacherDashboard(){
                 'diksh' => $request->diksha,
                 'description' => $request->input('description'),
                 'school_id' => $school_id,
+            ]);
+
+            $requestedId = $Add_Requested_video->id;
+
+            $Add_ForApproval_courses = ApproveContent::create([
+                'classroom_id' => $request->classroom_id,
+                'subject_code' => $request->input('subject_name'),
+                'teacher_id' => $teacher_id,
+                'content' => $video,
+                'schoole_id' => $school_id,
+                'description' => 'videos , ' . $requestedId,
             ]);
     
             return redirect()->back()->with('success', 'A Teacher Updated Successfully.');
@@ -1380,9 +1405,9 @@ public function getTeacherDashboard(){
 
 
 
-    public function video_delete($id){
-        $Add_Requested_courses=Video::where('id',$id)->delete();
-return  redirect()->back()->with('error', 'This Video is Deleted Successfully.');  
+    public function content_delete($id){
+        $Add_Requested_courses=ApproveContent::where('id',$id)->delete();
+       return  redirect()->back()->with('success', 'This Content is Deleted Successfully.');    
     }
 
 
@@ -1438,7 +1463,6 @@ return  redirect()->back()->with('error', 'This Video is Deleted Successfully.')
                 ->where('school', $school_id)
                 ->whereIn('classroom_id', $classroom_ids)
                 ->get();
-    // dd($students);
 
      return view('teacher.managevideo', [
          'requested_data' => $requested_data,
@@ -1453,28 +1477,50 @@ return  redirect()->back()->with('error', 'This Video is Deleted Successfully.')
     public function storeReportContent(Request $request)
     {
     try {
+        $contentDetails = null;
+        if ($request->table_name == 'requests') {
+            $contentDetails = DB::table('requests')->where('id', $request->video_id)->first();
+        } else {
+            $contentDetails = DB::table('videos')->where('id', $request->video_id)->first();
+        }
+
+        if (!$contentDetails) {
+            return response()->json(['message' => 'Content not found'], 404);
+        }
+
         $log = new Reportlog();
         $log->video_id = $request->video_id;
+        $log->content_name = $contentDetails->course_title;
+        $log->teacher_id = $contentDetails->teacher_id;
+        $log->classroom_id = $contentDetails->classroom_id;
+        $log->subject_code = $contentDetails->subject_code;
+        $log->content_table_name = $request->table_name;
+
+        if ($request->table_name == 'requests') {
+            $log->content = $contentDetails->url;
+            $log->content_type = 'url';
+        } else {
+            $log->content = $contentDetails->video;
+            $log->content_type = $contentDetails->courses_type;
+        }
+
         $log->open_time = $request->open_time;
-        $log->close_time = $request->close_time;
-        $log->interval = $request->interval;
+        $log->close_time = $request->close_time ?? '-';
+        $log->interval = $request->interval ?? '-';
+        $log->description = session('school_id') ?? '-';
         $log->save();
 
-        return response()->json(['message' => 'PDF log stored successfully'], 200);
+        $message = ($request->table_name == 'requests') ? 'PDF log stored successfully' : 'Video log stored successfully';
+        return response()->json(['message' => $message], 200);
 
     } catch (\Exception $e) {
-        dd($e->getMessage());
-        // Log the exception message for debugging
-        \Log::error('Failed to store PDF log: ' . $e->getMessage());
+        // Log the error message for debugging
+        Log::error('Error storing report content: ' . $e->getMessage());
 
-        // Return a JSON response with the error message
-        return response()->json(['error' => 'Failed to store PDF log. Please try again later.'], 500);
+        // Return a response indicating a server error
+        return response()->json(['message' => 'An error occurred while storing the report content'], 500);
     }
   }
-
-
-
-
 
 
     public function add_diksh(){
@@ -1483,6 +1529,18 @@ return  redirect()->back()->with('error', 'This Video is Deleted Successfully.')
         $classrooms=Classroom::where('school_id','=',$school_id)->get();
         return view('teacher.add_diksh',['classrooms'=>$classrooms]);
 
+    }
+
+    public function video_delete($id)
+    {
+        try {
+            $video = Video::findOrFail($id);
+            $video->delete();
+
+            return redirect()->back()->with('success', 'Video deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors('Error deleting video: ' . $e->getMessage());
+        }
     }
 
 
@@ -1624,11 +1682,23 @@ return  redirect()->back()->with('error', 'This Video is Deleted Successfully.')
             'description' => $request->input('description')
         ]);
 
+        $requestedId = $Add_Requested_courses->id;
+
+
+        $Add_ForApproval_courses = ApproveContent::create([
+            'classroom_id' => $request->input('classroom'),
+            'subject_code' => $request->input('subject'),
+            'teacher_id' => $teacher_id,
+            'content' => $request->input('url'),
+            'schoole_id' => $school_id,
+            'description' => 'requests , ' . $requestedId,
+        ]);
+
         // Redirect with success message
         return redirect('/teacher/request_course')->with('success', 'Url Added Successfully.');
     } catch (\Exception $e) {
         // Log the error message
-        // dd($e->getMessage());
+        dd($e->getMessage());
         \Log::error('Error storing requested data: ' . $e->getMessage());
 
         // Redirect back with an error message
@@ -1706,6 +1776,7 @@ return  redirect()->back()->with('error', 'This Video is Deleted Successfully.')
                 ->where('school', $school_id)
                 ->whereIn('classroom_id', $classroom_ids)
                 ->get();
+
                 
     return view('teacher.manageteacher', [
         'requested_data' => $requested_data,
@@ -1791,14 +1862,13 @@ public function share($id){
 
 public function class_link(Request $request){
     if($request->isMethod('post')){
-        // dd($request->all());
         $teacher_id=session('teacher_id');
         $school_id=session('school_id');
         $Add_Requested_courses=class_link::create([
         'teacher_id' => $teacher_id,
         'topic_id'=>$request->input('topic_id'),
         'subtopic_id'=>$request->input('subtopic_id'),
-        'subject_code'=>$request->input('subject_code'),
+        'subject_code'=>$request->input('subject_name'),
         // 'courses_type'=>$request->input('coursetype'),
         'class_time'=>$request->class_time,
         'to_meeting_time'=>$request->to_meeting_time,

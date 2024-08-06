@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Session;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\StudentsImport;
 use App\Exports\StudentsExport;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 
 class StudentController extends Controller
@@ -37,28 +39,29 @@ class StudentController extends Controller
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
      */
+
     public function index(Request $request)
     {
-        $schools=DB::table('users')->where('role_id',1)->get();
-        // $students = Student::with('classroom')->Paginate(10);
-        $query = Student::with('classroom');
+    $schools = DB::table('users')->where('role_id', 1)->get();
+    $query = Student::with('classroom')->join('classrooms', 'students.classroom_id', '=', 'classrooms.id')->orderBy('students.id', 'desc');
 
-        if ($request->has('search')) {
-            $searchTerm = $request->input('search');
-    
-            // Filter students based on search criteria
-            $query->where(function ($q) use ($searchTerm) {
-                $q->Where('student_num', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('father_name', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('email', 'like', '%' . $searchTerm . '%')
-                    ->orWhere(DB::raw("CONCAT(first_name, ' ', surname)"), 'like', '%' . $searchTerm . '%');
-            });
-        }
-    
-        $students = $query->paginate(10);
-        
-        return view('student.index',compact('students'));
+    if ($request->has('search')) {
+        $searchTerm = $request->input('search');
+
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('students.student_num', 'like', '%' . $searchTerm . '%')
+                ->orWhere('students.father_name', 'like', '%' . $searchTerm . '%')
+                ->orWhere('students.email', 'like', '%' . $searchTerm . '%')
+                ->orWhere(DB::raw("CONCAT(students.first_name, ' ', students.surname)"), 'like', '%' . $searchTerm . '%')
+                ->orWhere('classrooms.name', 'like', '%' . $searchTerm . '%');
+        });
     }
+
+    $students = $query->select('students.*')->paginate(10);
+
+    return view('student.index', compact('students'));
+  }
+
 
     /**
      * Show the form for creating a new resource.
@@ -67,8 +70,7 @@ class StudentController extends Controller
      */
     public function create()
     {
-        // dd("chandan");
-        $classrooms = Classroom::all();
+        $classrooms = DB::table('classrooms')->where('school_id',session('school_id'))->get();
         $schools=DB::table('users')->where('role_id',1)->get();
         return view('student.view', compact('classrooms','schools'));
     }
@@ -89,6 +91,27 @@ class StudentController extends Controller
      */
     public function store(Request $request)
     {
+
+        $validator = Validator::make($request->all(), [
+            'classroom' => 'required',
+            'enrollment_date' => 'required|date',
+            // 'email' => 'required|email|unique:students,email',
+            // 'password' => 'required|string|min:6',
+            'first_name' => 'required|string|max:255',
+            'surname' => 'required|string|max:255',
+            'gender' => 'required|in:0,1',
+            'birth_date' => 'required|date',
+            'parent_phone_number' => 'required|string|max:11|regex:/^\d+$/',
+            'father_name' => 'required|string|max:255',
+            'address' => 'required|string|max:500',
+        ]);
+    
+        if ($validator->fails()) {
+            return redirect('/student/create')
+                        ->withErrors($validator)
+                        ->withInput();
+        }
+        
         try {   
             
             $user_id = $request->get('first_name').'_'.$request->get('surname').'_'.($request->get('parent_phone_number') ?? '123456789');
@@ -133,12 +156,14 @@ class StudentController extends Controller
                     ->withErrors($exception->getMessage());
             }
              return redirect('/student/manage')->with('success', 'A New Student Added Successfully.');
-        }
+        
+    }
      
        
     
 
-public function stu_store(Request $request){
+    public function stu_store(Request $request)
+    {
          DB::table('users')->insert([
            'name'=>Session('first_name'),
            'email'=>Session('email'),
@@ -171,46 +196,12 @@ public function stu_store(Request $request){
      */
     public function edit(int $id)
     {
-        // dd("chandan");
-        $classrooms = Classroom::all();
+        $classrooms = DB::table('classrooms')->where('school_id',session('school_id'))->get();
         $student = Student::findOrFail($id);
         return view('student.edit_student', compact('student', 'classrooms' ));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param StudentAddUpdateRequest $request
-     * @param int $id
-     * @return Application|RedirectResponse|Response|Redirector
-     */
-    // public function Studentupdate(StudentAddUpdateRequest $request, int $id)
-    // {
-    //     dd("chandan");
-    //     $student = Student::findOrFail($id);
-    //     try {
-    //         // Safely perform set of DB related queries if fail rollback all.
-    //         DB::transaction(function () use ($request, $student){
-    //             $student->first_name = $request->first_name;
-    //             $student->surname = $request->surname;
-    //             $student->birth_date = $request->birth_date;
-    //             $student->classroom_id = $request->classroom;
-    //             $student->parent_phone_number = $request->parent_phone_number;
-    //             $student->father_name = $request->father_name;
-    //             $student->address = $request->address;
-    //             $student->enrollment_date = $request->enrollment_date;
-    //             $student->gender = $request->gender;
-    //             $student->save();
-    //         });
-    //     } catch (\Exception $exception){
-    //         // Back to form with errors
-    //         dd($e->getMessage());
-    //         return redirect('/student/edit/'.$id)
-    //             ->withErrors($exception->getMessage());
-    //     }
-    //     return redirect('/student')->with('success', 'A New Student Added Successfully.');
-    // }
-
+    
     public function Studentupdate(Request $request, int $id)
     {
     $request->validate([
@@ -220,7 +211,7 @@ public function stu_store(Request $request){
         'enrollment_date' => 'required|date',
         'birth_date' => 'required|date',
         'gender' => 'required|in:0,1',
-        'parent_phone_number' => 'required|string|max:15',
+        'parent_phone_number' => 'required|string|max:11|regex:/^\d+$/',
         'father_name' => 'required|string|max:255',
         'address' => 'required|string|max:255',
         'classroom' => 'required|integer',
@@ -334,25 +325,35 @@ public function stu_store(Request $request){
     }
 
     public function addcsvview(){
-        $classrooms = Classroom::all();
+        $classrooms = DB::table('classrooms')->where('school_id',session('school_id'))->get();
         return view('student.addbulkdata', compact('classrooms'));
-      }
+    }
 
 
-    public function uploadExcel(Request $request)
-    {
-    $request->validate([
-        'excelFile' => 'required|file|mimes:xlsx,xls',
-        'classroom' => 'required|exists:classrooms,id',
-    ]);
+        public function uploadExcel(Request $request)
+        {
+        $request->validate([
+            'excelFile' => 'required|file|mimes:xlsx,xls',
+            'classroom' => 'required|exists:classrooms,id',
+        ]);
+    
 
-    $file = $request->file('excelFile');
-    $classroomId = $request->input('classroom');
-    $schoolId = Auth::user()->id;
+        $file = $request->file('excelFile');
+        $classroomId = $request->input('classroom');
+        $schoolId = Auth::user()->id;
 
-    // Import data
-    Excel::import(new StudentsImport($classroomId, $schoolId), $file);
+        try {
+            Excel::import(new StudentsImport($classroomId, $schoolId), $file);
+            return redirect()->back()->with('success', 'Students uploaded successfully.');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
 
-    return redirect()->back()->with('success', 'Students uploaded successfully.');
-  }
+            $errorMessages = [];
+            foreach ($failures as $failure) {
+                $errorMessages[] = 'Row ' . $failure->row() . ': ' . implode(', ', $failure->errors());
+            }
+
+            return redirect()->back()->withErrors($errorMessages);
+        }
+    }
 }

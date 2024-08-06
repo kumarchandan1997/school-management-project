@@ -23,6 +23,9 @@
                                             <input type="text" class="form-control" name="name" id="name"
                                                 autofocus placeholder="Name"
                                                 value="{{ isset($subject) ? $subject->name : old('name') }}" required>
+                                            @error('name')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6" style="display:none;">
@@ -39,6 +42,9 @@
                                                     <option value="1">Second</option>
                                                 @endif
                                             </select>
+                                            @error('semester')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -63,6 +69,9 @@
                                                     @endforeach
                                                 @endif
                                             </select>
+                                            @error('classroom')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -85,6 +94,9 @@
                                                     @endforeach
                                                 @endif
                                             </select>
+                                            @error('teacher')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -95,6 +107,9 @@
                                             <textarea type="text" style="resize: vertical;" rows="3" class="form-control" name="description"
                                                 id="myTextarea" required>{{ isset($subject) ? $subject->description : old('description') }}</textarea>
                                         </div>
+                                        @error('description')
+                                            <div class="alert alert-danger">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary me-2">Save</button>

@@ -14,6 +14,7 @@ use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Validator;
 
 class SubjectController extends Controller
 {
@@ -32,31 +33,31 @@ class SubjectController extends Controller
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
      */
     public function index(Request $request)
-    {
-        $school_id=session('school_id');
-        // $subjects = Subject::with(['classroom','teacher'])->where('school_id','=',$school_id)->orderBy('created_at', 'desc')->Paginate(10);
-        $query = Subject::with(['classroom', 'teacher'])->where('school_id', '=', $school_id);
+   {
+    $school_id = session('school_id');
+    $query = Subject::with(['classroom', 'teacher'])
+                    ->where('school_id', '=', $school_id);
 
-        if ($request->has('search')) {
-            $searchTerm = $request->input('search');
+    if ($request->has('search')) {
+        $searchTerm = $request->input('search');
 
-            // Filter subjects based on search criteria
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('subject_code', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('name', 'like', '%' . $searchTerm . '%')
-                    ->orWhereHas('classroom', function ($q) use ($searchTerm) {
-                        $q->where('name', 'like', '%' . $searchTerm . '%');
-                    })
-                    ->orWhereHas('teacher', function ($q) use ($searchTerm) {
-                        $q->Where(DB::raw("CONCAT(first_name, ' ', surname)"), 'like', '%' . $searchTerm . '%');
-                    });
-            });
-        }
-
-        $subjects = $query->orderBy('created_at', 'desc')->paginate(10);
-        
-        return view('subject.index',compact('subjects'));
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('subject_code', 'like', '%' . $searchTerm . '%')
+              ->orWhere('name', 'like', '%' . $searchTerm . '%')
+              ->orWhereHas('classroom', function ($q) use ($searchTerm) {
+                  $q->where('name', 'like', '%' . $searchTerm . '%');
+              })
+              ->orWhereHas('teacher', function ($q) use ($searchTerm) {
+                  $q->where(DB::raw("CONCAT(first_name, ' ', surname)"), 'like', '%' . $searchTerm . '%');
+              });
+        });
     }
+
+    $subjects = $query->orderBy('id', 'desc')->paginate(10);
+
+    return view('subject.index', compact('subjects'));
+  }
+
 
     /**
      * Show the form for creating a new resource.
@@ -80,7 +81,22 @@ class SubjectController extends Controller
      * @return Application|RedirectResponse|Response|Redirector
      */
     public function store(SubjectAddUpdateRequest $request)
-    {   
+    {  
+        // dd($request->all());
+        $validator = Validator::make($request->all(), [
+            'name' => 'required',
+            'classroom' => 'required',
+            'teacher' => 'required',
+            'description' => 'required|string|max:500',
+        ]);
+    
+        if ($validator->fails()) {
+            return redirect('/subject/create')
+                        ->withErrors($validator)
+                        ->withInput();
+        }
+        
+        
         try {
             DB::transaction(function () use ($request){
                   $session_school_id=session('school_id');
@@ -99,7 +115,7 @@ class SubjectController extends Controller
             });
           
         }catch (\Exception $exception){
-            // Back to form with errors
+            dd($exception->getMessage());
             return redirect('/subject/create')
                 ->withErrors($exception->getMessage());
         }

@@ -18,6 +18,29 @@
             th {
                 background-color: #f2f2f2;
             }
+
+            .video-container-course-Material {
+                position: relative;
+                width: 100%;
+                max-width: 640px;
+                margin: auto;
+            }
+
+            .video-container-course-Material video {
+                width: 100%;
+                height: auto;
+            }
+
+            .full-screen-icon {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background-color: rgba(0, 0, 0, 0.5);
+                color: white;
+                padding: 5px;
+                cursor: pointer;
+                border-radius: 3px;
+            }
         </style>
         </head>
 
@@ -50,12 +73,31 @@
                             <td>{{ $item->subtopic_name ?? '-' }}</td>
                             <td>{{ $item->description ?? '-' }}</td>
                             <td>
-                                <button class="content-button"
-                                    data-content-link="{{ asset('videos/' . $item->content_link) }}"
-                                    data-course-type="{{ $item->course_type }}"
-                                    onclick="openContentInNewTab('{{ asset('videos/' . $item->content_link) }}')">
-                                    Click to view content
-                                </button>
+                                @if ($item->course_type === 'Video')
+                                    @if ($item->status === 'admin')
+                                        <div class="video-container-course-Material">
+                                            <video controls>
+                                                <source src="{{ asset($item->content_link) }}" type="video/mp4">
+                                                Your browser does not support the video tag.
+                                            </video>
+                                            <div class="full-screen-icon" onclick="toggleFullScreen(this)">🔍</div>
+                                        </div>
+                                    @else
+                                        <div class="video-container-course-Material">
+                                            <video controls>
+                                                <source src="{{ asset('videos/' . $item->content_link) }}" type="video/mp4">
+                                                Your browser does not support the video tag.
+                                            </video>
+                                            <div class="full-screen-icon" onclick="toggleFullScreen(this)">🔍</div>
+                                        </div>
+                                    @endif
+                                @elseif ($item->course_type === 'PDF')
+                                    <button class="content-button"
+                                        data-content-link="{{ asset('videos/' . $item->content_link) }}"
+                                        onclick="openContentInNewTab('{{ asset('videos/' . $item->content_link) }}')">
+                                        Click to view PDF
+                                    </button>
+                                @endif
                             </td>
 
                         </tr>
@@ -71,5 +113,22 @@
             var win = window.open(contentLink, '_blank');
             win.focus();
         }
+
+        function toggleFullScreen(element) {
+            const videoContainer = element.parentElement;
+            if (videoContainer.requestFullscreen) {
+                videoContainer.requestFullscreen();
+            } else if (videoContainer.mozRequestFullScreen) { // Firefox
+                videoContainer.mozRequestFullScreen();
+            } else if (videoContainer.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                videoContainer.webkitRequestFullscreen();
+            } else if (videoContainer.msRequestFullscreen) { // IE/Edge
+                videoContainer.msRequestFullscreen();
+            }
+        }
+
+        $(document).ready(function() {
+            $('#gamesTable').DataTable();
+        });
     </script>
 @endsection

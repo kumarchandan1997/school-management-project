@@ -1,12 +1,36 @@
 @extends('layouts.app_view')
 
 @section('content')
+    <style>
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+        }
+
+        .overlay iframe {
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay button {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+        }
+    </style>
+
+
+
     <div class="main-panel">
-        <!-- Container for PDF iframe -->
-        <div id="pdfContainer" style="display: none; width: 100%; height: 100%; position: relative;">
-            <iframe id="pdfFrame" style="width: 100%; height: calc(100% - 50px);"></iframe>
-            <button class="btn btn-danger" onclick="closePDF()" style="position: absolute; bottom: 620px; right: 203px;">Close
-                PDF</button>
+        <div id="pdfContainer" class="overlay">
+            <iframe id="pdfFrame"></iframe>
+            <button class="btn btn-danger" onclick="closePDF()">Close PDF</button>
         </div>
 
 
@@ -90,40 +114,35 @@
                                 <td>{{ $video->topic_name }}</td>
                                 <td>{{ $video->subtopic_name }}</td>
                                 <td>
-                                    @php
-                                        $extension = pathinfo($video->video, PATHINFO_EXTENSION);
-                                    @endphp
-
-                                    @if ($extension === 'mp4' || $extension === 'webm' || $extension === 'ogg')
-                                        <video width="150" height="200" controls>
-                                            <source src="{{ asset('videos/' . $video->video) }}"
-                                                type="video/{{ $extension }}">
-                                        </video>
-                                    @else
-                                        @if ($video->status !== 'Pending')
-                                            <a href="#"
-                                                onclick="openAndTrackPDF('{{ asset('videos/' . $video->video) }}', '{{ $video->id }}', event)"
-                                                class="video-pdf-link" data-id="{{ $video->id }}">
-                                        @endif
-                                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100"
-                                            height="100" viewBox="0 0 48 48">
-                                            <path fill="#90CAF9" d="M40 45L8 45 8 3 30 3 40 13z"></path>
-                                            <path fill="#E1F5FE" d="M38.5 14L29 14 29 4.5z"></path>
-                                            <path fill="#1976D2"
-                                                d="M16 21H33V23H16zM16 25H29V27H16zM16 29H33V31H16zM16 33H29V35H16z"></path>
-                                        </svg>
-                                        @if ($video->status !== 'Pending')
-                                            </a>
-                                        @endif
+                                    @if ($video->courses_type === 'Video')
+                                        <img src="https://www.shutterstock.com/image-vector/play-button-icon-vector-illustration-260nw-1697833306.jpg"
+                                            width="100" height="100" alt="Video Icon">
+                                    @elseif ($video->courses_type === 'PDF')
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg"
+                                            width="100" height="100" alt="PDF Icon">
                                     @endif
                                 </td>
-                                <td>
+
+                                <td class="course_link">
                                     @if ($video->status == 'Approve')
-                                        <a href="" class="btn btn-success btn-rounded">Open..</a>
+                                        @if ($video->courses_type === 'Video')
+                                            <button class="btn btn-success btn-rounded"
+                                                onclick="openInIframe('{{ asset('videos/' . $video->video) }}', {{ $video->id }})">Open
+                                                Video</button>
+                                        @elseif ($video->courses_type === 'PDF')
+                                            <button class="btn btn-success btn-rounded"
+                                                onclick="openInIframe('{{ asset('videos/' . $video->video) }}', {{ $video->id }})">Open
+                                                PDF</button>
+                                        @else
+                                            <button class="btn btn-success btn-rounded"
+                                                onclick="openInIframe('{{ asset('videos/' . $video->video) }}', {{ $video->id }})">Open</button>
+                                        @endif
                                     @elseif ($video->status == 'Pending')
                                         <button class="btn btn-danger btn-rounded">{{ $video->status }}</button>
                                     @endif
                                 </td>
+
+
                                 <td>
                                     <a href="{{ url('teacher/video_delete/' . $video->id) }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
@@ -144,10 +163,18 @@
                                             </path>
                                         </svg>
                                     </a>
-                                    <button type="button" class="btn btn-info ti-share btn-rounded" data-toggle="modal"
-                                        data-target="#ContentModal{{ $video->id }}">
-                                        Share
-                                    </button>
+                                    @if ($video->status == 'Approve')
+                                        <!-- Share Button (Clickable) -->
+                                        <button type="button" class="btn btn-info ti-share btn-rounded" data-toggle="modal"
+                                            data-target="#ContentModal{{ $video->id }}">
+                                            Share
+                                        </button>
+                                    @else
+                                        <!-- Share Button (Disabled or Hidden) -->
+                                        <button type="button" class="btn btn-info ti-share btn-rounded" disabled>
+                                            Share
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -172,7 +199,8 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="ContentModalLabel{{ $video->id }}">Share Meeting</h5>
+                        <h5 class="modal-title" id="ContentModalLabel{{ $video->id }}">Share
+                            Meeting</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -271,42 +299,33 @@
     <script>
         var openTime;
 
-        function openAndTrackPDF(pdfPath, videoId, event) {
-            event.preventDefault(); // Prevent the default link behavior
-            openTime = new Date();
-            console.log('PDF opened at:', openTime);
-
-            // Hide all children of the main panel except the pdfContainer
-            var mainPanel = document.querySelector('.main-panel');
-            Array.from(mainPanel.children).forEach(child => {
-                if (child.id !== 'pdfContainer') {
-                    child.style.display = 'none';
-                }
-            });
-
-            // Show the pdfContainer and load the PDF in iframe
+        function openInIframe(url, videoId) {
+            document.getElementById('pdfFrame').src = url;
             document.getElementById('pdfContainer').style.display = 'block';
-            var pdfFrame = document.getElementById('pdfFrame');
-            pdfFrame.src = pdfPath;
+            document.querySelector('.content-wrapper').style.display = 'none';
 
-            // Store video ID in a global variable
+            openTime = new Date();
             window.currentVideoId = videoId;
+
         }
 
         function closePDF() {
+            document.getElementById('pdfFrame').src = '';
+            document.getElementById('pdfContainer').style.display = 'none';
+            document.querySelector('.content-wrapper').style.display = 'block';
+
             var closeTime = new Date();
-            console.log('PDF closed at:', closeTime);
+            console.log('Content closed at:', closeTime);
 
             var timeDifference = closeTime - openTime; // time difference in milliseconds
             var timeDifferenceInMinutes = timeDifference / 1000 / 60; // convert to minutes
-            console.log('PDF was open for:', timeDifferenceInMinutes.toFixed(2), 'minutes');
+            console.log('Content was open for:', timeDifferenceInMinutes.toFixed(2), 'minutes');
 
             // Format dates and times
             var openTimeFormatted = formatDateTime(openTime);
             var closeTimeFormatted = formatDateTime(closeTime);
 
-            // AJAX call to store the open, close times and interval
-            var videoId = window.currentVideoId; // Get the current video ID
+            var videoId = window.currentVideoId;
 
             fetch('/teacher/store-video-log', {
                     method: 'POST',
@@ -318,28 +337,21 @@
                         video_id: videoId,
                         open_time: openTimeFormatted,
                         close_time: closeTimeFormatted,
+                        table_name: 'videos',
                         interval: timeDifferenceInMinutes.toFixed(2)
                     })
                 })
                 .then(response => {
                     if (response.ok) {
-                        console.log('PDF log stored successfully');
+                        console.log('Log stored successfully');
                     } else {
-                        console.error('Failed to store PDF log');
+                        console.error('Failed to store log');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                 });
 
-            var mainPanel = document.querySelector('.main-panel');
-            Array.from(mainPanel.children).forEach(child => {
-                if (child.id !== 'pdfContainer') {
-                    child.style.display = '';
-                }
-            });
-
-            document.getElementById('pdfContainer').style.display = 'none';
         }
 
         // Function to format date and time

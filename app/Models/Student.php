@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Student extends Model
 {
     use HasFactory;
+
+    protected $table='students';
+
     public $fillable = [
         'first_name',
         'surname',
@@ -21,7 +24,8 @@ class Student extends Model
         'enrollment_date',
         'school',
         'email',
-        'password'
+        'password',
+        'father_name'
     ];
 
     public function classroom()

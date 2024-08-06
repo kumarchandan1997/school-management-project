@@ -79,40 +79,6 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                {{-- Commented out classroom and subject fields
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="classroom">Classroom</label>
-                                        <select id="classroom" name="classroom" class="form-control form-control-sm" data-dependent='subject' required>
-                                            <option value="">Select a Classroom</option>
-                                            @if (isset($teacher))
-                                                @foreach ($classrooms as $classroom)
-                                                    <option value="{{ $classroom->id }}" {{ $teacher->classroom_id == $classroom->id ? 'selected' : '' }}>
-                                                        {{ $classroom->name }}
-                                                    </option>
-                                                @endforeach
-                                            @else
-                                                @foreach ($classrooms as $classroom)
-                                                    <option value="{{ $classroom->id }}">{{ $classroom->name }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="subject">Subject</label>
-                                        <select id="subject" name="subject" class="form-control form-control-sm" required>
-                                            <option value="">Select a Subject</option>
-                                            <!-- Subjects will be populated via AJAX -->
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            --}}
-
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">

@@ -51,8 +51,8 @@
                 </div>
                 @if (Route::has('password.request'))
                     <!-- <a class="auth-link text-black" href="{{ route('password.request') }}">
-                                            {{ __('Forgot your password?') }}
-                                        </a> -->
+                                                                    {{ __('Forgot your password?') }}
+                                                                </a> -->
                 @endif
             </div>
             <div class="my-3">

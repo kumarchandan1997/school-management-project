@@ -13,24 +13,13 @@
                                     <thead>
                                         <tr>
                                             <th>Content Title</th>
-                                            <!-- <th>Subject Code</th> -->
                                             <th>Subject Name</th>
                                             <th>Subject Code</th>
                                             <th>Classroom</th>
                                             <th>Content Type</th>
                                             <th>Url</th>
-                                            <!-- <th>Teacher</th> -->
-                                            <!-- <th>Actions</th> -->
                                             <th>Status</th>
-                                            {{-- <th>
-                                            App url
-                                        </th> --}}
-                                            {{-- <th>
-                                            Ecuational Games
-                                        </th> --}}
-                                            <th>
-                                                Action
-                                            </th>
+                                            <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -51,14 +40,12 @@
 
                                                 @if ($data->courses_type == 'PDF')
                                                     <td class="course_type">
-                                                        <!-- {{ $data->courses_type }} -->
                                                         <i class="fa-solid fa-file-pdf"
                                                             style="font-size:30px; padding-left:30px;"></i>
 
                                                     </td>
                                                 @else
                                                     <td class="course_type">
-                                                        <!-- {{ $data->courses_type }} -->
                                                         <i class="fa-solid fa-circle-play"
                                                             style="font-size:30px; padding-left:30px;"></i>
 
@@ -69,16 +56,15 @@
                                                         <span class="link_achar"
                                                             style="color: grey; cursor: not-allowed;">{{ $data->url }}</span>
                                                     @else
-                                                        <a href="{{ $data->url }}"
-                                                            class="link_achar">{{ $data->url }}</a>
+                                                        <a href="{{ $data->url }}" class="link_achar"
+                                                            onclick="storeReport(event, {{ $data->id }}, '{{ $data->url }}')">{{ $data->url }}</a>
                                                     @endif
                                                 </td>
-
                                                 <td>
                                                     <div class="btn-group">
                                                         @if ($data->status == 'Approve')
-                                                            <a href="view?id={{ $data->id }}"> <button type="button"
-                                                                    class="btn btn-success  btn-rounded">Open..</button></a>
+                                                            <button type="button"
+                                                                class="btn btn-success  btn-rounded">Approve</button>
                                                         @elseif($data->status == 'Pending')
                                                             <button type="button"
                                                                 class="btn btn-danger btn-rounded">{{ $data->status }}</button>
@@ -199,6 +185,52 @@
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+        function storeReport(event, videoId, url) {
+            event.preventDefault();
+            let openTime = new Date();
+            let openTimeFormatted = formatDateTime(openTime);
+
+            fetch('/teacher/store-video-log', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        video_id: videoId,
+                        open_time: openTimeFormatted,
+                        table_name: 'requests',
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('Log stored successfully');
+                        window.location.href = url;
+                    } else {
+                        console.error('Failed to store log');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+
+        // Function to format date and time
+        function formatDateTime(date) {
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }) + ' ' + date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+    </script>
 
 
 

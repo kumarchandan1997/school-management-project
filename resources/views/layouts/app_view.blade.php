@@ -148,6 +148,7 @@
                         </a>
                     </div>
                 </li> --}}
+                    {{-- {{ dd(auth()->user()) }} --}}
                     <li class="nav-item nav-profile dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
                             id="profileDropdown">
@@ -166,6 +167,12 @@
                                         {{ __('Log Out') }}</i>
                                 </a>
                             </form>
+                            @if (auth()->user()->role_id == 2)
+                                <button class="btn btn-primary" data-bs-toggle="modal"
+                                    data-bs-target="#changePasswordModal">
+                                    Change Password
+                                </button>
+                            @endif
                         </div>
                     </li>
                 </ul>
@@ -182,7 +189,7 @@
                 <ul class="nav">
                     <li class="nav-item">
                         @if (session()->get('role_id') == 1)
-                            <a class="nav-link" href="/">
+                            <a class="nav-link" href="/dashboard">
                                 <i class="ti-shield menu-icon"></i>
                                 <span class="menu-title">Dashboard</span>
                             </a>
@@ -456,6 +463,41 @@
 
         </div>
     </footer>
+
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="currentPassword" name="currentPassword"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="newPassword" name="newPassword"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                                required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- partial -->
 
 
@@ -497,19 +539,50 @@
         });
     </script>
 
-    <!-- <script src="{{ asset('intl_tel_input/js/intlTelInput.js') }}"></script>
+    {{-- <script src="{{ asset('intl_tel_input/js/intlTelInput.js') }}"></script> --}}
     <script>
-        var input = document.querySelector("#contact");
-        window.intlTelInput(input, {
-            hiddenInput: "full_phone",
-            nationalMode: false,
-            placeholderNumberType: "",
-            preferredCountries: ['in'],
-            separateDialCode: true,
-            utilsScript: "{{ asset('intl_tel_input/js/utils.js') }}"
+        document.getElementById('changePasswordForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword === confirmPassword) {
+
+                fetch('{{ route('teacher.change.password') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                                'content'),
+                        },
+                        body: JSON.stringify({
+                            currentPassword: currentPassword,
+                            newPassword: newPassword,
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Password changed successfully!');
+                            const modal = bootstrap.Modal.getInstance(document.getElementById(
+                                'changePasswordModal'));
+                            modal.hide();
+                        } else {
+                            alert('Failed to change password: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+
+            } else {
+                console.log('Passwords do not match.');
+                alert('Passwords do not match.');
+            }
         });
-    </script> -->
-    <!-- plugins:js -->
+    </script>
 
     <script src="{{ asset('vendors/base/vendor.bundle.base.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>

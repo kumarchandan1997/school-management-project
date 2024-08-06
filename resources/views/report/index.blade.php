@@ -5,24 +5,40 @@
         <div class="content-wrapper">
             <!-- Search Form -->
             <div class="row mb-3">
-                <div class="col-lg-6">
-                    <form action="{{ url('/classroom/report') }}" method="GET">
-                        <div class="input-group">
-                            <input type="text" name="search" class="form-control"
+                <div class="col-lg-10">
+                    <form action="{{ url('/classroom/report') }}" method="GET" style="display: flex; align-items: flex-end;">
+                        <div class="form-group" style="margin-right: 10px;">
+                            <label for="search">Search</label>
+                            <input type="text" id="search" name="search" class="form-control"
                                 placeholder="Search by content name, subject, or teacher..."
                                 value="{{ request()->query('search') }}">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="submit" style="margin-left: 10px;">Search</button>
-                                <button class="btn btn-secondary" type="button"
-                                    onclick="window.location.href='{{ url('/classroom/report') }}'"
-                                    style="margin-left: 10px;">Reset</button>
-                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 10px;">
+                            <label for="start_date">From Date</label>
+                            <input type="date" id="start_date" name="start_date" class="form-control"
+                                placeholder="From Date" value="{{ request()->query('start_date') }}">
+                        </div>
+                        <div class="form-group" style="margin-right: 10px;">
+                            <label for="end_date">To Date</label>
+                            <input type="date" id="end_date" name="end_date" class="form-control" placeholder="To Date"
+                                value="{{ request()->query('end_date') }}">
+                        </div>
+                        <div class="form-group" style="margin-right: 10px;">
+                            <button class="btn btn-primary" type="submit" style="margin-top: 32px;">Search</button>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-secondary" type="button"
+                                onclick="window.location.href='{{ url('/classroom/report') }}'"
+                                style="margin-top: 32px;">Reset</button>
                         </div>
                     </form>
                 </div>
-                <div class="col-lg-6 d-flex justify-content-end">
-                    <a href="{{ route('report.export', ['search' => request()->query('search')]) }}"
-                        class="btn btn-success">Download</a>
+
+
+                <div class="col-lg-2 d-flex justify-content-end">
+                    <a href="{{ route('report.export', ['search' => request()->query('search')]) }}" class="btn btn-success"
+                        style="padding: 11px;
+    margin: 43px;">Download</a>
                 </div>
             </div>
 
@@ -51,26 +67,40 @@
                                         @foreach ($reportLogs as $log)
                                             @php
                                                 $openTime = new DateTime($log->open_time);
-                                                $closeTime = new DateTime($log->close_time);
-                                                $interval = $openTime->diff($closeTime);
-                                                $formattedInterval = $interval->format('%h hours %i minutes');
+                                                if ($log->content_table_name == 'videos') {
+                                                    $closeTime = new DateTime($log->close_time);
+                                                    $interval = $openTime->diff($closeTime);
+                                                    $formattedInterval = $interval->format('%h hours %i minutes');
+                                                }
                                             @endphp
                                             <tr>
                                                 <td>{{ $log->id }}</td>
-                                                <td>{{ $log->course_title }}</td>
+                                                <td>{{ $log->content_name }}</td>
                                                 <td>{{ $log->fullname }}</td>
                                                 <td>{{ $log->classroom_name }}</td>
                                                 <td>{{ $log->subject_name }}</td>
-                                                <td>
-                                                    <a href="{{ asset('videos/' . $log->video) }}" target="_blank">View
-                                                        Content</a>
-                                                </td>
+                                                @if ($log->content_table_name == 'videos')
+                                                    <td>
+                                                        <a href="{{ asset('videos/' . $log->content) }}"
+                                                            target="_blank">View
+                                                            Content</a>
+                                                    </td>
+                                                @else
+                                                    <td><a href="{{ $log->content }}" target="_blank">View
+                                                            Content</a></td>
+                                                @endif
                                                 <td>{{ $log->open_time }}</td>
-                                                <td>{{ $log->close_time }}</td>
-                                                <td>{{ $formattedInterval }}</td>
+                                                @if ($log->content_table_name == 'videos')
+                                                    <td>{{ $log->close_time }}</td>
+                                                    <td>{{ $formattedInterval }}</td>
+                                                @else
+                                                    <td>-</td>
+                                                    <td>-</td>
+                                                @endif
                                             </tr>
                                         @endforeach
                                     </tbody>
+
                                 </table>
                             </div>
                             <div class="d-flex justify-content-center">
@@ -81,6 +111,5 @@
                 </div>
             </div>
         </div>
-        <!-- content-wrapper ends -->
     </div>
 @endsection

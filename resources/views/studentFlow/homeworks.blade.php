@@ -30,10 +30,9 @@
                         <th>Title</th>
                         <th>Class</th>
                         <th>Subject</th>
-                        <th>Topic</th>
-                        <th>Sub Topic</th>
                         <th>Description</th>
                         <th>Topic Link</th>
+                        <th>Approve Content</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -46,16 +45,33 @@
                             <td>{{ $item->homework_title ?? '-' }}</td>
                             <td>{{ $item->classroom_name ?? '-' }}</td>
                             <td>{{ $item->subject_name ?? '-' }}</td>
-                            <td>{{ $item->topic_name ?? '-' }}</td>
-                            <td>{{ $item->subtopic_name ?? '-' }}</td>
                             <td>{{ $item->description ?? '-' }}</td>
-                            {{-- <td><a href="{{ $item->homework_link }}">{{ $item->homework_link }}</a></td> --}}
                             <td>
-                                <button class="content-button"
-                                    onclick="showContent('{{ url('storage/homeworks/' . $item->homework_link) }}')">
+                                <a href="{{ url('storage/' . $item->homework_link) }}" class="content-link" target="_blank">
                                     Click to view content
-                                </button>
+                                </a>
                             </td>
+                            <td>
+                                @if ($item->video)
+                                    @if ($item->courses_type == 'PDF')
+                                        <a href="{{ asset('videos/' . $item->video) }}" class="content-link" target="_blank">
+                                            Click to view Approve PDF
+                                        </a>
+                                    @elseif ($item->courses_type == 'Video')
+                                        <a href="{{ asset('videos/' . $item->video) }}" class="content-link" target="_blank">
+                                            Click to view Approve Video
+                                        </a>
+                                    @else
+                                        -
+                                    @endif
+                                @else
+                                    -
+                                @endif
+                            </td>
+
+
+
+
                         </tr>
                     @endforeach
                 </tbody>

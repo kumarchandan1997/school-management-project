@@ -27,9 +27,7 @@ class AddcoursesController extends Controller
     public function deactivateSchool(Request $request)
     {
     $school_id = $request->input('id');
-    //dd($school_id);
     $soft_login = $request->input('soft_login');
-    //dd($soft_login);
 
     $user = User::find($school_id);
     if ($user) {

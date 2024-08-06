@@ -149,14 +149,14 @@ class AuthenticatedSessionController extends Controller
     if (Auth::attempt($credentials)) {
         $request->session()->regenerate();
 
-        if ($user_data && $user_data->role_id == 2) {
+        if ($user_data && $user_data->role_id == 2 && $user_data->soft_login == 1) {
           session(['school_id' => $teacher->school_id]);
             return redirect()->route('teacher_dashboard');
-        } elseif ($user_data && $user_data->role_id == 1) {
+        } elseif ($user_data && $user_data->role_id == 1 && $user_data->soft_login == 1) {
       
             session(['school_id' => $user_data->id]);
             return redirect()->intended(RouteServiceProvider::HOME);
-        } else if ($user_data && $user_data->role_id == 3){
+        } else if ($user_data && $user_data->role_id == 3 && $user_data->soft_login == 1){
             return redirect()->route('manager.user');
         } else if ($user_data && $user_data->role_id==0)
         {

@@ -1,7 +1,6 @@
 @extends('layouts.app_view');
 
 @section('content')
-
     <div class="main-panel">
         <div class="content-wrapper">
             <div class="row">
@@ -12,7 +11,7 @@
                                 {{ isset($course) ? 'with The Number: ' . $course->subject_code : '' }}</h4>
                             <form class="forms-sample"
                                 action="{{ isset($course) ? '/courses/update/' . $course->id : route('storecourses') }}"
-                                method="post">
+                                method="post" enctype="multipart/form-data">
                                 @csrf
                                 <div class="row">
                                     <div class="col-md-6">
@@ -22,6 +21,9 @@
                                                 autofocus placeholder="Content Title"
                                                 value="{{ isset($course) ? $course->course_title : old('course_title') }}"
                                                 style="border-radius:5px;" required>
+                                            @error('course_title')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -34,32 +36,8 @@
                                                     <option value="{{ $classroomId }}">{{ $classroomName }}</option>
                                                 @endforeach
                                             </select>
-                                        </div>
-                                    </div>
-
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="selectedData">Subject</label>
-                                            <input type="text" name="subject_name" value="subject_name" hidden>
-                                            <select id="selected_content_Subject" name="subject_name"
-                                                class="form-control form-control-sm" required>
-                                                {{-- <option value="">Select subject</option> --}}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="topic_id">Topic</label>
-                                            <select id="content_admin_topic_id" name="topic_id"
-                                                class="form-control form-control-sm" required>
-                                                <option value="0">Select a Topic</option>
-                                                <!-- Topics will be populated via AJAX -->
-                                            </select>
-                                            @error('topic_id')
-                                                <span class="text-danger">{{ $message }}</span>
+                                            @error('classroom_id')
+                                                <div class="alert alert-danger">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
@@ -67,64 +45,67 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="teacher">Sub Topic</label>
-                                            <select id="content_admin_subtopic_id" name="subtopic_id"
+                                            <label for="subject_name">Subject</label>
+                                            <select id="selected_content_Subject" name="subject_name"
                                                 class="form-control form-control-sm" required>
-                                                <option value="">Select Topic</option>
                                             </select>
+                                            @error('subject_name')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="coursetype">Content Type</label>
                                             <select id="coursetype" name="coursetype" class="form-control form-control-sm"
-                                                required>
-                                                @if (isset($course->courses_type))
-                                                    @if ($course->courses_type == 'PDF')
-                                                        <option value="PDF" selected>PDF</option>
-                                                        <option value="Video">Video</option>
-                                                    @else
-                                                        <option value="Video" selected>Video</option>
-                                                        <option value="PDF">PDF</option>
-                                                    @endif
-                                                @else
-                                                    <option value="">Select Content Type</option>
-                                                    <option value="PDF" id="option1">PDF</option>
-                                                    <option value="Video" id="option1">Video</option>
-                                                @endif
+                                                required onchange="toggleSections()">
+                                                <option value="">Select Content Type</option>
+                                                <option value="PDF">PDF</option>
+                                                <option value="Video">Video</option>
+                                                <option value="Url">Url</option>
                                             </select>
                                         </div>
                                     </div>
                                 </div>
-                                {{ csrf_field() }}
-                                <div class="row">
+                                <div id="fileUploadSection" class="row d-none">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="pdf_video">Upload File</label>
+                                            <input type="file" class="form-control" name="pdf_video" id="pdf_video">
+                                            @error('pdf_video')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="urlSection" class="row d-none">
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label for="url">URL</label>
-                                            @if (isset($course))
-                                                <input type="text" class="form-control" name="url"
-                                                    value="{{ isset($course) ? $course->url : old('url') }}" id="url"
-                                                    required>
-                                            @else
-                                                <input type="text" class="form-control" name="url" value=""
-                                                    id="url" required>
-                                            @endif
+                                            <input type="text" class="form-control" name="url"
+                                                value="{{ isset($course) ? $course->url : old('url') }}" id="url">
+                                            @error('url')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="form-group">
-                                            <label for="myTextarea">Description</label>
-                                            <textarea class="form-control" name="description" id="myTextarea" rows="3" required>
-                                        {{ isset($course) ? $course->description : old('description') }}
-                                    </textarea>
+                                            <label for="description">Description</label>
+                                            <textarea class="form-control" name="description" id="description" rows="3" required>{{ isset($course) ? $course->description : old('description') }}</textarea>
+                                            @error('description')
+                                                <div class="alert alert-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary me-2">Save</button>
                                 <a class="btn btn-light" href="/subject">Cancel</a>
                             </form>
+
+
                         </div>
                     </div>
                 </div>
@@ -136,47 +117,7 @@
 
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        var selected = document.getElementById('selectedData');
 
-        selected.disabled = false;
-        // console.log(selected);
-        $(document).ready(function() {
-            $("#classroom").change(function() {
-                selected.innerHTML = '';
-
-                //  selected.selectedIndex = -1;
-                var selectedClassroomId = $(this).val();
-                selected.disabled = false;
-
-
-                $.ajax({
-                    url: "{{ env('APP_URL') }}" + "/api/test",
-                    method: "POST",
-                    data: {
-                        'classroom_id': selectedClassroomId
-                    },
-                    dataType: "json",
-                    success: function(data) {
-                        console.log(data);
-                        allOptions = '';
-                        data.forEach(function(item) {
-                            console.log(item.name);
-                            let newOption = document.createElement('option');
-                            newOption.innerText = item.name;
-                            newOption.value = item.subject_code;
-                            console.log(newOption.value)
-                            //console.log(newOption);
-                            selected.appendChild(newOption);
-                        });
-                    },
-                    error: function(xhr, status, error) {
-                        console.error(error);
-                    }
-                });
-            });
-        });
-    </script>
 
     <script>
         $(document).ready(function() {
@@ -281,6 +222,35 @@
                 }
             });
         });
-    </script>
 
+
+        function toggleSections() {
+            const coursetype = document.getElementById('coursetype').value;
+            const fileUploadSection = document.getElementById('fileUploadSection');
+            const urlSection = document.getElementById('urlSection');
+            const urlInput = document.getElementById('url');
+            const fileInput = document.getElementById('pdf_video');
+
+            if (coursetype === 'PDF' || coursetype === 'Video') {
+                fileUploadSection.classList.remove('d-none');
+                fileInput.required = true;
+                urlSection.classList.add('d-none');
+                urlInput.required = false;
+            } else if (coursetype === 'Url') {
+                fileUploadSection.classList.add('d-none');
+                fileInput.required = false;
+                urlSection.classList.remove('d-none');
+                urlInput.required = true;
+            } else {
+                fileUploadSection.classList.add('d-none');
+                fileInput.required = false;
+                urlSection.classList.add('d-none');
+                urlInput.required = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            toggleSections();
+        });
+    </script>
 @endsection

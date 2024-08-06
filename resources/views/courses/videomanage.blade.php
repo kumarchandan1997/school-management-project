@@ -35,13 +35,9 @@
                                             <th>SL</th>
                                             <th>Class</th>
                                             <th>Subject</th>
-                                            {{-- <th>Course Title</th> --}}
                                             <th>Teacher Name</th>
-                                            {{-- <th>Courses Type</th> --}}
                                             <th>Video/pdf/url</th>
                                             <th>Status</th>
-                                            {{-- <th>Diksha</th>
-                                            <th>Game</th> --}}
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -49,110 +45,27 @@
                                         @php
                                             $i = 1;
                                         @endphp
-                                        @foreach ($requested_data as $data)
+                                        @foreach ($approvedContentRequest as $data)
                                             <tr>
                                                 <td>{{ $i++ }}</td>
 
 
-                                                <td>
-                                                    @if ($data->classroom_id == 1)
-                                                        Nursary
-                                                    @elseif($data->classroom_id == 2)
-                                                        Class 2
-                                                    @elseif($data->classroom_id == 3)
-                                                        Class 3
-                                                    @elseif($data->classroom_id == 4)
-                                                        Class 4
-                                                    @elseif($data->classroom_id == 5)
-                                                        Class 5
-                                                    @elseif($data->classroom_id == 6)
-                                                        Class 6
-                                                    @elseif($data->classroom_id == 7)
-                                                        Class 7
-                                                    @elseif($data->classroom_id == 8)
-                                                        Class 8
-                                                    @elseif($data->classroom_id == 9)
-                                                        Class 9
-                                                    @elseif($data->classroom_id == 10)
-                                                        Class 10
-                                                    @else
-                                                        Next 10 class
-                                                    @endif
-
-                                                </td>
+                                                <td>{{ $data->classroom_name }}</td>
 
 
-                                                <td>
-                                                    @php
-                                                        $dataa = DB::table('subjects')
-                                                            ->where('subject_code', $data->subject_code)
-                                                            ->first();
-                                                    @endphp
-                                                    {{ $dataa->name ?? '-' }}
-                                                </td>
+                                                <td>{{ $data->subject_name }}</td>
 
-                                                {{-- <td class="py-1">{{ $data->course_title }}</td> --}}
-                                                <td>{{ $teacher_details[$data->teacher_id]['name'] }}</td>
-                                                {{-- <td>
-                                                    @if ($data->courses_type == 'PDF')
-                                                        <i class="fa-solid fa-file-pdf coursetype"></i>
-                                                    @else
-                                                        <i class="fa-solid fa-circle-play coursetype"></i>
-                                                    @endif
-                                                </td> --}}
+                                                <td>{{ $data->teacher_name }}</td>
 
-                                                {{-- <td class="course_link">
-                                                    @php
-                                                        $extension = pathinfo($data->video, PATHINFO_EXTENSION);
-                                                    @endphp
 
-                                                    @if ($extension === 'mp4' || $extension === 'webm' || $extension === 'ogg')
-                                                        <video width="150" height="200" controls>
-                                                            <source src="{{ asset('videos/' . $data->video) }}"
-                                                                type="video/{{ $extension }}">
-                                                        </video>
-                                                    @else
-                                                        <a href="{{ asset('videos/' . $data->video) }}" target="_black">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px"
-                                                                width="100" height="100" viewBox="0 0 48 48">
-                                                                <path fill="#90CAF9" d="M40 45L8 45 8 3 30 3 40 13z"></path>
-                                                                <path fill="#E1F5FE" d="M38.5 14L29 14 29 4.5z"></path>
-                                                                <path fill="#1976D2"
-                                                                    d="M16 21H33V23H16zM16 25H29V27H16zM16 29H33V31H16zM16 33H29V35H16z">
-                                                                </path>
-                                                            </svg>
-                                                        </a>
-                                                    @endif
-                                                </td> --}}
-
-                                                {{-- <td class="course_link">
-                                                    <video width="150" height="200" controls>
-                                                        <source src="{{ asset('videos/' . $data->video) }}" type="video/mp4">
-                                                    </video>
-                                                </td> --}}
-                                                {{-- {{ dd($data->table_name) }} --}}
-                                                {{-- 
-                                                <td>
-                                                    @if ($data->status == 'Pending')
-                                                        <a href="{{ url('courses/status/' . $data->id) }}">
-                                                            <button type="submit" class="btn btn-primary"
-                                                                style="background-color:red ">Pending</button>
-                                                        </a>
-                                                    @else
-                                                        <a href="{{ url('courses/status/' . $data->id) }}">
-                                                            <button type="submit" class="btn btn-primary">Approve</button>
-                                                        </a>
-                                                    @endif
-                                                </td> --}}
-
-                                                <td>{{ $data->url ?? '-' }}</td>
+                                                <td>{{ $data->content ?? '-' }}</td>
 
                                                 <td>
                                                     <form action="{{ url('courses/update-status') }}" method="POST">
                                                         @csrf
                                                         <input type="hidden" name="id" value="{{ $data->id }}">
-                                                        <input type="hidden" name="table_name"
-                                                            value="{{ $data->table_name }}">
+                                                        <input type="hidden" name="table_and_id"
+                                                            value="{{ $data->description }}">
                                                         @if ($data->status == 'Pending')
                                                             <button type="submit" class="btn btn-primary"
                                                                 style="background-color:red">Pending</button>
@@ -163,14 +76,9 @@
                                                 </td>
 
 
-                                                {{-- <td>
-                                                    <a href="{{ $data->diksh }}" target="_blank">Diksha</a>
-                                                </td>
+
                                                 <td>
-                                                    <a href="{{ $data->games }}" target="_blank">Game</a>
-                                                </td> --}}
-                                                <td>
-                                                    <a href="{{ url('courses/video_delete/' . $data->id) }}">
+                                                    <a href="{{ url('courses/content_delete/' . $data->id) }}">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16"
                                                             height="16" fill="currentColor" class="bi bi-trash3-fill"
                                                             viewBox="0 0 16 16">
@@ -185,7 +93,7 @@
                                 </table>
                             </div>
                             <div class="d-flex justify-content-center">
-                                {!! $requested_data->links() !!}
+                                {!! $approvedContentRequest->links() !!}
                             </div>
                         </div>
                     </div>

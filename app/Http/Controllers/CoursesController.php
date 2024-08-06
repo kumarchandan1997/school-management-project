@@ -38,54 +38,122 @@ class CoursesController extends Controller
 
     public function store(Request $request)
     {
-      // dd($request->all());
-      
-      $currentTimestamp = now();
-      $session_school_id = session('school_id');
-    
-     $courseData = [
-        'course_title' => $request->input('course_title'),
-        'classroom_id' => $request->input('classroom_id'),
-        'subject_code' => $request->input('subject_name'),
-        'courses_type' => $request->input('coursetype'),
-        'topic_id' => $request->input('topic_id'),
-        'sub_topic_id' => $request->input('subtopic_id'),
-        'url' => $request->input('url'),
-        'description' => $request->input('description'),
-        'school_id' => $session_school_id,
-        'created_at' => $currentTimestamp, 
-        'updated_at' => $currentTimestamp,
+    $rules = [
+        'course_title' => 'required|string|max:255',
+        'classroom_id' => 'required|exists:classrooms,id',
+        'subject_name' => 'required|string|max:255',
+        'coursetype' => 'required|string|max:255',
+        'description' => 'nullable|string',
     ];
-      DB::table('courses')->insert($courseData);
-      return redirect()->back()->with('success', 'Course saved successfully');
+
+    // Additional rules based on coursetype
+    if ($request->coursetype == 'PDF' || $request->coursetype == 'Video') {
+        $rules['pdf_video'] = 'required|file|mimes:pdf,mp4';
+    } elseif ($request->coursetype == 'Url') {
+        $rules['url'] = 'required|url';
     }
 
-    public function updatecourses(Request $request, $id)
-    {
+    $messages = [
+        'classroom_id.exists' => 'The selected classroom does not exist.',
+        'pdf_video.required' => 'A file is required for PDF/Video content.',
+        'url.required' => 'A URL is required for URL content.',
+    ];
+
+    $validatedData = $request->validate($rules, $messages);
+    
+    try {
         $currentTimestamp = now();
         $session_school_id = session('school_id');
 
+        // Initialize courseData array
         $courseData = [
-            'course_title' => $request->input('course_title'),
-            'classroom_id' => $request->input('classroom_id'),
-            'subject_code' => $request->input('subject_code'),
-            'courses_type' => $request->input('coursetype'),
-            'topic_id' => $request->input('topic_id'),
-            'sub_topic_id' => $request->input('subtopic_id'),
-            'url' => $request->input('url'),
-            'description' => $request->input('description'),
+            'course_title' => $validatedData['course_title'],
+            'classroom_id' => $validatedData['classroom_id'],
+            'subject_code' => $validatedData['subject_name'],
+            'courses_type' => $validatedData['coursetype'],
+            'description' => $validatedData['description'] ?? null,
             'school_id' => $session_school_id,
+            'created_at' => $currentTimestamp,
             'updated_at' => $currentTimestamp,
         ];
 
-        DB::table('courses')->where('id', $id)->update($courseData);
+        if ($request->hasFile('pdf_video') && ($validatedData['coursetype'] == 'PDF' || $validatedData['coursetype'] == 'Video')) {
+            $file = $request->file('pdf_video');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('uploads', $filename, 'public');
+            $courseData['pdf_video'] = '/storage/' . $path;
+        }
 
-        return redirect()->back()->with('success', 'Course updated successfully!');
+        // Handle URL for URL content type
+        if ($validatedData['coursetype'] == 'Url') {
+            $courseData['url'] = $validatedData['url'];
+        }
+
+        DB::table('courses')->insert($courseData);
+
+        return redirect()->back()->with('success', 'Course saved successfully');
+    } catch (\Exception $exception) {
+        // dd($exception->getMessage());
+        return redirect()->back()->withErrors($exception->getMessage());
     }
+}
+
+
+    public function updatecourses(Request $request, $id)
+    {
+        $rules = [
+            'course_title' => 'required|string|max:255',
+            'classroom_id' => 'required|exists:classrooms,id',
+            'subject_code' => 'required|string|max:255',
+            'coursetype' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'url' => 'nullable|string|url',
+        ];
+
+        $messages = [
+            'classroom_id.exists' => 'The selected classroom does not exist.',
+        ];
+
+        $validatedData = $request->validate($rules, $messages);
+
+        try {
+            $currentTimestamp = now();
+            $session_school_id = session('school_id');
+
+            $courseData = [
+                'course_title' => $validatedData['course_title'],
+                'classroom_id' => $validatedData['classroom_id'],
+                'subject_code' => $validatedData['subject_code'],
+                'courses_type' => $validatedData['coursetype'],
+                'description' => $validatedData['description'],
+                'school_id' => $session_school_id,
+                'updated_at' => $currentTimestamp,
+            ];
+
+            if ($request->hasFile('pdf_video') && ($validatedData['coursetype'] == 'PDF' || $validatedData['coursetype'] == 'Video')) {
+                $file = $request->file('pdf_video');
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('uploads', $filename, 'public');
+                $courseData['pdf_video'] = '/storage/' . $path;
+            }
+            
+            if ($validatedData['coursetype'] == 'Url') {
+                $courseData['url'] = $validatedData['url'];
+            }
+
+            DB::table('courses')->where('id', $id)->update($courseData);
+
+            return redirect()->back()->with('success', 'Course updated successfully!');
+        } catch (\Exception $exception) {
+            dd($exception->getMessage());
+            return redirect()->back()->withErrors($exception->getMessage());
+        }
+    }
+
+
 
     public function managedata(Request $request)
     {
-      //dd($request);
       $school_id=session('school_id');
       $query = Course::where('school_id', '=', $school_id);
       
@@ -119,18 +187,80 @@ class CoursesController extends Controller
           $subject_names[] = $sub_name;
       }
 
+      $classrooms = DB::table('classrooms')->where('school_id',$school_id)->get();
+
         
       return view('courses.coursemanage', [
         'courses_detail' => $courses_detail,
         'classroom_names' => $classroom_names,
-        'subject_names' => $subject_names
+        'subject_names' => $subject_names,
+        'classrooms' => $classrooms
     ]);
     
     }
 
+
+  // In StudentController.php
+    public function getStudentsByClassroomAndQuery(Request $request)
+    {
+        $classroomId = $request->query('classroom_id');
+        $query = $request->query('query');
+
+        $students = DB::table('students')
+            ->select('id', DB::raw("CONCAT(first_name, ' ', surname) AS name"))
+            ->where('classroom_id', $classroomId)
+            ->where('school', session('school_id'))
+            ->where(function ($q) use ($query) {
+                $q->where('first_name', 'like', "%$query%")
+                ->orWhere('surname', 'like', "%$query%");
+            })
+            ->get();
+
+        return response()->json(['students' => $students]);
+    }
+
+    public function shareAdminContent(Request $request, $course_id)
+    {
+        $validated = $request->validate([
+            'classroom_id' => 'required|exists:classrooms,id',
+            'student_ids' => 'array',
+            'student_ids.*' => 'exists:students,id',
+            'description' => 'nullable|string',
+        ]);
+
+        $classroomId = $validated['classroom_id'];
+        $studentIds = $validated['student_ids'] ?? [];
+        $description = $validated['description'] ?? '';
+
+        $contentDeatils = DB::table('courses')->where('id',$course_id)->first();
+
+        $studentIdsString = implode(',', $studentIds);
+        // dd($contentDeatils);
+
+            DB::table('mycontentshares')->insert([
+                'students_ids' => $studentIdsString,
+                'teacher_id' => $contentDeatils->teacher_id ?? '0',
+                // 'topic' => 0,
+                'classroom_id' => $contentDeatils->classroom_id ?? '0',
+                'subject_id' => $contentDeatils->subject_code ?? '-',
+                'content_title' => $contentDeatils->course_title ?? '',
+                'course_type' => $contentDeatils->courses_type ?? '',
+                'status' => 'admin',
+                'content_link' => $contentDeatils->pdf_video ?? '0',
+                // 'meeting_time' => '-',
+                'description' => $description,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true]);
+    }
+
+
+
+
     public function getrequestedcourse_courses()
     {
-       // dd('heel');
       $school_id=session('school_id');
       $teacher_details = [];
       $classroom_details=[];
@@ -182,122 +312,35 @@ class CoursesController extends Controller
 
 
     public function videomanager(Request $request) {
-      $school_id = session('school_id');
-      $teacher_details = [];
-      $classroom_details = [];
-      $subject_details = [];
-  
-      // Initial query for requests
-      $pendingRequests = DB::table('requests')
-          ->where('school_id', $school_id)
-          ->select(
-              'id',
-              'url',
-              'classroom_id',
-              'teacher_id',
-              'topic_id',
-              'subtopic_id',
-              'subject_code',
-              'status',
-              DB::raw('NULL as created_at'),
-              DB::raw("'requests' as table_name")
-          );
-  
-      // Initial query for videos
-      $pendingVideos = DB::table('videos')
-          ->where('school_id', $school_id)
-          ->select(
-              'id',
-              'video as url',
-              'classroom_id',
-              'teacher_id',
-              'topic_id',
-              'subtopic_id',
-              'subject_code',
-              'status',
-              'created_at',
-              DB::raw("'videos' as table_name")
-          )
-          ->union($pendingRequests);
-  
-      // Combined query for games
-      $pendingItems = DB::table('games')
-          ->where('school_id', $school_id)
-          ->select(
-              'id',
-              'url',
-              'classroom_id',
-              'teacher_id',
-              'topic_id',
-              'subtopic_id',
-              DB::raw('NULL as subject_code'),
-              'status',
-              'created_at',
-              DB::raw("'games' as table_name")
-          )
-          ->union($pendingVideos);
-  
-      // Search functionality
-      if ($request->has('search')) {
-          $search = $request->input('search');
-          $pendingItems = DB::table(DB::raw("({$pendingItems->toSql()}) as sub"))
-              ->mergeBindings($pendingItems)
-              ->leftJoin('classrooms', 'sub.classroom_id', '=', 'classrooms.id')
-              ->leftJoin('subjects', 'sub.subject_code', '=', 'subjects.subject_code')
-              ->where(function($query) use ($search) {
-                  $query->where('subjects.name', 'like', "%$search%")
-                      ->orWhere('classrooms.name', 'like', "%$search%");
-              })
-              ->select('sub.*')
-              ->orderBy('sub.created_at', 'desc');
-      } else {
-          $pendingItems = $pendingItems->orderBy('created_at', 'desc');
-      }
-  
-      // Paginate the results
-      $requested_data = $pendingItems->paginate(10);
-  
-      // Populate teacher_details, classroom_details, and subject_details arrays
-      foreach ($requested_data as $request) {
-          $teacher_id = $request->teacher_id;
-          $classroom_id = $request->classroom_id;
-          $subject_code = $request->subject_code;
-  
-          // Fetch teacher details
-          $teacher = Teacher::find($teacher_id);
-          if ($teacher) {
-              $teacher_details[$teacher_id] = [
-                  'name' => $teacher->first_name . ' ' . $teacher->surname,
-              ];
-          }
-  
-          // Fetch classroom details
-          $classroom = Classroom::find($classroom_id);
-          if ($classroom) {
-              $classroom_details[$classroom_id] = [
-                  'id' => $classroom->id,
-                  'name' => $classroom->name,
-              ];
-          }
-  
-          // Fetch subject details
-          $subject = Subject::where('subject_code', $subject_code)->first();
-          if ($subject) {
-              $subject_details[$subject_code] = [
-                  'id' => $subject->id,
-                  'name' => $subject->name,
-              ];
-          }
-      }
-  
-      // Pass data to the view
-      return view('courses.videomanage', [
-          'requested_data' => $requested_data,
-          'teacher_details' => $teacher_details,
-          'classroom_details' => $classroom_details,
-          'subject_details' => $subject_details,
-      ]);
-  }
+        $school_id = session('school_id');
+        $search = $request->input('search');
+    
+        $query = DB::table('approve_contents')
+            ->leftJoin('classrooms', 'approve_contents.classroom_id', '=', 'classrooms.id')
+            ->leftJoin('subjects', 'approve_contents.subject_code', '=', 'subjects.subject_code')
+            ->leftJoin('teachers', 'approve_contents.teacher_id', '=', 'teachers.id')
+            ->select(
+                'approve_contents.*', 
+                'classrooms.name as classroom_name', 
+                'subjects.name as subject_name', 
+                DB::raw("CONCAT(teachers.first_name, ' ', teachers.surname) as teacher_name")
+            )
+            ->where('approve_contents.schoole_id', $school_id);
+    
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('subjects.name', 'LIKE', "%{$search}%")
+                        ->orWhere('classrooms.name', 'LIKE', "%{$search}%")
+                        ->orWhere(DB::raw("CONCAT(teachers.first_name, ' ', teachers.surname)"), 'LIKE', "%{$search}%");
+                });
+            }
+    
+            $approvedContentRequest = $query->paginate(10);
+
+        return view('courses.videomanage',compact('approvedContentRequest'));
+    }
+    
+    
   
 
 
@@ -551,16 +594,13 @@ return  redirect()->back()->with('error', 'This Video is Deleted Successfully.')
   public function edit(int $id)
    {
        $school_id=session('school_id');
-        // $classrooms =Classroom::where('school_id','=',$school_id)->get();
         $classrooms = DB::table('subjects')
         ->leftJoin('classrooms', 'subjects.classroom_id', '=', 'classrooms.id')
         ->where('subjects.school_id', '=', $school_id)
         ->where('classrooms.school_id', '=', $school_id)
         ->distinct()
         ->pluck('classrooms.name','subjects.classroom_id');
-        // $teachers=Teacher::where('school_id','=',$school_id)->get();
         $courses= Course::findOrFail($id);
-        // $subject = Subject::where('classroom_id', '=', $course->classroom_id)->where('school_id','=',$school_id)->get();
        
        return view ('courses.editcourse',['classrooms'=>$classrooms,'courses'=>$courses]);
    }
@@ -570,7 +610,7 @@ return  redirect()->back()->with('error', 'This Video is Deleted Successfully.')
    public function update(Request  $request,int $id)
    {  
       $course=Course::findOrFail($id);
-     // dd($course);
+     dd($course);
       $course->course_title =$request->course_title;
       $course->subject_code= $request->subject;
       $course->description=$request->description;
@@ -616,13 +656,22 @@ return  redirect()->back()->with('error', 'This Video is Deleted Successfully.')
     public function updateStatusContent(Request $request)
     {
         $id = $request->input('id');
-        $table = $request->input('table_name');
+        $tableAndId = $request->input('table_and_id');
+        $parts = explode(' , ',$tableAndId);
+       
+        $table = $parts[0];
+        $real_table_id = $parts[1];
 
-        // Assuming you want to toggle the status between 'Pending' and 'Approve'
-        $status = DB::table($table)->where('id', $id)->value('status');
+        $status = DB::table($table)->where('id', $real_table_id)->value('status');
         $newStatus = ($status == 'Pending') ? 'Approve' : 'Pending';
 
-        DB::table($table)->where('id', $id)->update(['status' => $newStatus]);
+        DB::table($table)->where('id', $real_table_id)->update(['status' => $newStatus]);
+
+
+        $approve_contents_status = DB::table('approve_contents')->where('id', $id)->value('status');
+        $newStatus = ($status == 'Pending') ? 'Approve' : 'Pending';
+
+        DB::table('approve_contents')->where('id', $id)->update(['status' => $newStatus]);
 
         return redirect()->back()->with('status', 'Status updated successfully');
     }

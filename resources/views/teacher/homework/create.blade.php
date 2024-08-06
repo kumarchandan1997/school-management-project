@@ -58,7 +58,7 @@
                                         <div class="form-group">
                                             <label for="content_id" class="col-form-label">Approve Content</label>
                                             <select id="content_id" name="content_id"
-                                                class="form-control form-control-sm select2" required>
+                                                class="form-control form-control-sm select2">
                                                 <option value="">Select an option</option>
                                                 @foreach ($content as $option)
                                                     <option value="{{ $option->id }}">{{ $option->course_title }}</option>
